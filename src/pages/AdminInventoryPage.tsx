@@ -92,7 +92,13 @@ export default function AdminInventoryPage() {
 
       <div className="card overflow-hidden">
         <div className="divide-y divide-surface-100">
-          {filteredItems.map(item => {
+          {filteredItems.length === 0 ? (
+            <div className="p-20 text-center flex flex-col items-center animate-fade-in">
+               <div className="text-4xl mb-4 opacity-50">🔍</div>
+               <p className="font-bold text-surface-900">No items found in this category.</p>
+               <p className="text-sm text-surface-500 mt-1">Try switching tabs or searching for something else.</p>
+            </div>
+          ) : filteredItems.map(item => {
             const count = stockCounts[item.id] || 0;
             const isEditing = editingId === item.id;
 
