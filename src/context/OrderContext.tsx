@@ -36,13 +36,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const [stockCounts, setStockCounts] = useState<Record<string, number>>(() => {
     const map: Record<string, number> = {};
-    initialItems.forEach(item => { map[item.id] = item.stockCount; });
+    initialItems.forEach(item => { map[item.id] = item.stockCount ?? 0; });
     return map;
   });
 
   const addCatalogItem = useCallback((item: PantryItem) => {
     setCatalog(prev => [item, ...prev]);
-    setStockCounts(prev => ({ ...prev, [item.id]: item.stockCount }));
+    setStockCounts(prev => ({ ...prev, [item.id]: item.stockCount ?? 0 }));
   }, []);
 
   const removeCatalogItem = useCallback((itemId: string) => {
