@@ -7,6 +7,7 @@ export interface PantryItem {
   unit: string;       // e.g. "crate", "pack", "bottle", "box"
   emoji: string;       // visual representation
   inStock: boolean;
+  stockCount: number;  // inventory quantity
   minOrder?: number;
   maxOrder?: number;
   dietary?: 'vegan' | 'vegetarian' | 'meat' | 'none';

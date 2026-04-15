@@ -8,12 +8,13 @@ interface OrderContextType {
   orders: Order[];
   catalog: PantryItem[];
   addCatalogItem: (item: PantryItem) => void;
+  removeCatalogItem: (itemId: string) => void;
   placeOrder: (items: CartEntry[], deliveryType: DeliveryOption, deliveryDate: string, deliveryTimeWindow: string, surcharge: number, companyName: string, companyEmail: string, companyAddress: string, customRequests: string) => Order;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   toggleHaccp: (orderId: string) => void;
   setInvoiceTotal: (orderId: string, total: number) => void;
-  inventory: Record<string, boolean>;
-  toggleStock: (itemId: string) => void;
+  stockCounts: Record<string, number>;
+  updateStockCount: (itemId: string, count: number) => void;
 }
 
 const OrderContext = createContext<OrderContextType | null>(null);
@@ -21,26 +22,39 @@ const OrderContext = createContext<OrderContextType | null>(null);
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(DEMO_ORDERS);
   
-  // Enriched initial data with dietary tags
+  // Enriched initial data with dietary tags and default stock
   const initialItems = [...PANTRY_ITEMS].map(i => {
-    if(i.category === 'dairy') return { ...i, dietary: 'vegetarian', allergens: ['Milk'] } as PantryItem;
-    if(i.category === 'bakery') return { ...i, dietary: 'vegan', allergens: ['Gluten'] } as PantryItem;
-    if(i.category === 'snacks' && i.name.includes('Nuts')) return { ...i, dietary: 'vegan', allergens: ['Nuts'] } as PantryItem;
-    if(i.id === 'b6') return { ...i, dietary: 'meat', allergens: ['Milk', 'Gluten', 'Pork'] } as PantryItem; // example edge case
-    return { ...i, dietary: 'vegan', allergens: [] } as PantryItem;
+    const base = { ...i, stockCount: i.inStock ? 50 : 0 };
+    if(base.category === 'dairy') return { ...base, dietary: 'vegetarian', allergens: ['Milk'] } as PantryItem;
+    if(base.category === 'bakery') return { ...base, dietary: 'vegan', allergens: ['Gluten'] } as PantryItem;
+    if(base.category === 'snacks' && base.name.includes('Nuts')) return { ...base, dietary: 'vegan', allergens: ['Nuts'] } as PantryItem;
+    if(base.id === 'b6') return { ...base, dietary: 'meat', allergens: ['Milk', 'Gluten', 'Pork'] } as PantryItem; 
+    return { ...base, dietary: 'vegan', allergens: [] } as PantryItem;
   });
 
   const [catalog, setCatalog] = useState<PantryItem[]>(initialItems);
 
-  const [inventory, setInventory] = useState<Record<string, boolean>>(() => {
-    const map: Record<string, boolean> = {};
-    initialItems.forEach(item => { map[item.id] = item.inStock; });
+  const [stockCounts, setStockCounts] = useState<Record<string, number>>(() => {
+    const map: Record<string, number> = {};
+    initialItems.forEach(item => { map[item.id] = item.stockCount; });
     return map;
   });
 
   const addCatalogItem = useCallback((item: PantryItem) => {
     setCatalog(prev => [item, ...prev]);
-    setInventory(prev => ({ ...prev, [item.id]: item.inStock }));
+    setStockCounts(prev => ({ ...prev, [item.id]: item.stockCount }));
+  }, []);
+
+  const removeCatalogItem = useCallback((itemId: string) => {
+    setCatalog(prev => prev.filter(i => i.id !== itemId));
+    setStockCounts(prev => {
+      const { [itemId]: _, ...rest } = prev;
+      return rest;
+    });
+  }, []);
+
+  const updateStockCount = useCallback((itemId: string, count: number) => {
+    setStockCounts(prev => ({ ...prev, [itemId]: Math.max(0, count) }));
   }, []);
 
   const placeOrder = useCallback((
@@ -84,14 +98,12 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, invoiceTotal: total, status: 'invoiced' as const } : o));
   }, []);
 
-  const toggleStock = useCallback((itemId: string) => {
-    setInventory(prev => ({ ...prev, [itemId]: !prev[itemId] }));
-  }, []);
+
 
   return (
     <OrderContext.Provider value={{
-      orders, catalog, addCatalogItem, placeOrder, updateOrderStatus, toggleHaccp, setInvoiceTotal,
-      inventory, toggleStock,
+      orders, catalog, addCatalogItem, removeCatalogItem, placeOrder, updateOrderStatus, toggleHaccp, setInvoiceTotal,
+      stockCounts, updateStockCount,
     }}>
       {children}
     </OrderContext.Provider>

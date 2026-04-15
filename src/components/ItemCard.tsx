@@ -5,10 +5,12 @@ import { CATEGORIES } from '../data/mockData';
 
 interface Props {
   item: PantryItem;
-  inStock: boolean;
+  stockCount: number;
 }
 
-export default function ItemCard({ item, inStock }: Props) {
+export default function ItemCard({ item, stockCount }: Props) {
+  const inStock = stockCount > 0;
+
   const { addItem, removeItem, getQuantity } = useCart();
   const quantity = getQuantity(item.id);
   const catInfo = CATEGORIES.find(c => c.key === item.category);
@@ -59,6 +61,11 @@ export default function ItemCard({ item, inStock }: Props) {
             {item.allergens && item.allergens.length > 0 && (
               <span className="inline-block px-1.5 py-0.5 rounded border border-orange-200 bg-orange-50 text-[9px] font-bold text-orange-700 uppercase">
                 ⚠️ {item.allergens.join(', ')}
+              </span>
+            )}
+            {stockCount > 0 && stockCount < 10 && (
+              <span className="inline-block px-1.5 py-0.5 rounded border border-amber-200 bg-amber-50 text-[9px] font-bold text-amber-700 uppercase animate-pulse">
+                Only {stockCount} left
               </span>
             )}
           </span>

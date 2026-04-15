@@ -1,17 +1,21 @@
 import { useState, useMemo } from 'react';
 import { useOrders } from '../context/OrderContext';
 import CategoryTabs from '../components/CategoryTabs';
-import type { Category } from '../types';
-import { Bot, Plus, X, UploadCloud, Loader2 } from 'lucide-react';
+import type { Category, PantryItem } from '../types';
+import { Bot, Plus, X, UploadCloud, Loader2, Minus, Trash2, Save } from 'lucide-react';
 
 export default function AdminInventoryPage() {
-  const { inventory, toggleStock, catalog, addCatalogItem } = useOrders();
+  const { stockCounts, updateStockCount, catalog, addCatalogItem, removeCatalogItem } = useOrders();
   const [activeCat, setActiveCat] = useState<Category | 'all'>('all');
   
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
+
+  // Edit states
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [tempCount, setTempCount] = useState<string>('');
 
   const filteredItems = useMemo(() => {
     return catalog.filter(item => activeCat === 'all' || item.category === activeCat);
@@ -28,7 +32,6 @@ export default function AdminInventoryPage() {
   const handleSimulateScan = () => {
     setIsScanning(true);
     setScanResult(null);
-    // Simulate AI scanning from uploaded image of a "Guacamole Dip"
     setTimeout(() => {
       setIsScanning(false);
       setScanResult({
@@ -38,6 +41,7 @@ export default function AdminInventoryPage() {
         emoji: '🥑',
         dietary: 'vegan',
         allergens: ['Garlic', 'Onion'],
+        stockCount: 20
       });
     }, 2000);
   };
@@ -53,12 +57,25 @@ export default function AdminInventoryPage() {
     setScanResult(null);
   };
 
+  const startEdit = (item: PantryItem) => {
+    setEditingId(item.id);
+    setTempCount(stockCounts[item.id]?.toString() || '0');
+  };
+
+  const saveEdit = (id: string) => {
+    const val = parseInt(tempCount);
+    if (!isNaN(val)) {
+      updateStockCount(id, val);
+    }
+    setEditingId(null);
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-surface-900 mb-1">Inventory Management</h1>
-          <p className="text-surface-500 text-sm">Manage stock and auto-add new items via AI.</p>
+          <p className="text-surface-500 text-sm">Manage numerical stock levels and add/remove items.</p>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
@@ -76,37 +93,74 @@ export default function AdminInventoryPage() {
       <div className="card overflow-hidden">
         <div className="divide-y divide-surface-100">
           {filteredItems.map(item => {
-            const inStock = inventory[item.id] !== false;
+            const count = stockCounts[item.id] || 0;
+            const isEditing = editingId === item.id;
+
             return (
-              <div key={item.id} className={`flex items-center justify-between p-4 transition-colors ${inStock ? 'hover:bg-surface-50' : 'bg-red-50/20'}`}>
+              <div key={item.id} className={`flex items-center justify-between p-4 transition-colors ${count > 0 ? 'hover:bg-surface-50' : 'bg-red-50/10'}`}>
                 <div className="flex items-center gap-4">
                   <span className="text-2xl w-10 text-center">{item.emoji}</span>
                   <div>
                     <h3 className="font-semibold text-surface-900">{item.name}</h3>
-                    <p className="text-xs text-surface-500 capitalize mt-0.5">
+                    <p className="text-xs text-surface-500 capitalize mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]">
                       {item.category} • {item.unit}
-                      {item.dietary && item.dietary !== 'none' && (
-                        <span className="font-semibold text-surface-700"> • {item.dietary}</span>
-                      )}
                     </p>
-                    {item.allergens && item.allergens.length > 0 && (
-                      <p className="text-[10px] text-red-600 font-semibold mt-1 bg-red-50 inline-block px-1.5 py-0.5 rounded border border-red-100">
-                        Allergens: {item.allergens.join(', ')}
-                      </p>
-                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-semibold ${inStock ? 'text-green-600' : 'text-red-500'}`}>
-                    {inStock ? 'In Stock' : 'Out of Stock'}
-                  </span>
-                  {/* Toggle Switch */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    {isEditing ? (
+                      <div className="flex items-center gap-1 animate-scale-in">
+                        <input
+                          type="number"
+                          value={tempCount}
+                          onChange={(e) => setTempCount(e.target.value)}
+                          className="w-16 px-2 py-1 border border-brand-300 rounded-lg text-sm font-bold text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                          autoFocus
+                          onKeyDown={(e) => e.key === 'Enter' && saveEdit(item.id)}
+                        />
+                        <button 
+                          onClick={() => saveEdit(item.id)}
+                          className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-surface-50 px-2 py-1 rounded-xl border border-surface-100">
+                        <button 
+                          onClick={() => updateStockCount(item.id, count - 1)}
+                          className="p-1 hover:bg-surface-200 rounded-md transition-colors text-surface-500"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span 
+                          onClick={() => startEdit(item)}
+                          className={`min-w-[40px] text-center font-bold text-sm cursor-pointer hover:text-brand-600 transition-colors ${count === 0 ? 'text-red-500' : 'text-surface-900'}`}
+                        >
+                          {count}
+                        </span>
+                        <button 
+                          onClick={() => updateStockCount(item.id, count + 1)}
+                          className="p-1 hover:bg-surface-200 rounded-md transition-colors text-surface-500"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <button
-                    onClick={() => toggleStock(item.id)}
-                    className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none ${inStock ? 'bg-green-500' : 'bg-surface-300'}`}
+                    onClick={() => {
+                      if(window.confirm(`Are you sure you want to remove ${item.name} from the catalog?`)) {
+                        removeCatalogItem(item.id);
+                      }
+                    }}
+                    className="p-2 text-surface-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                    title="Remove item"
                   >
-                    <span className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ${inStock ? 'translate-x-5' : 'translate-x-0'}`} />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -118,7 +172,7 @@ export default function AdminInventoryPage() {
       {/* AI Scan Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up relative">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up relative text-left">
             <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100 bg-surface-50">
               <h3 className="font-bold text-surface-900 flex items-center gap-2">
                 <Bot className="w-5 h-5 text-brand-500" /> AI Product Scanner
@@ -141,19 +195,17 @@ export default function AdminInventoryPage() {
                     <div className="flex flex-col items-center">
                       <Loader2 className="w-10 h-10 text-brand-500 animate-spin mb-3" />
                       <p className="text-sm font-bold text-brand-700">AI is analyzing image...</p>
-                      <p className="text-xs text-brand-600 mt-1">Extracting dietary & allergen tags</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center">
                       <UploadCloud className="w-10 h-10 text-surface-400 mb-3" />
                       <p className="text-sm font-bold text-surface-700">Click to Upload Package Photo</p>
-                      <p className="text-xs text-surface-500 mt-1">AI will automatically read ingredients</p>
-                      <p className="text-[10px] text-surface-400 mt-2 font-mono bg-surface-100 px-2 py-0.5 rounded">(Simulates scanning an Avocado Dip)</p>
+                      <p className="text-xs text-surface-500 mt-1">AI will automatically create the item & starting stock</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="space-y-4 animate-fade-in">
+                <div className="space-y-4 animate-fade-in text-left">
                   <div className="flex items-center justify-between border-b pb-4">
                      <p className="text-sm font-semibold text-green-600">✅ Scan Complete</p>
                   </div>
@@ -168,23 +220,12 @@ export default function AdminInventoryPage() {
                     </div>
                   </div>
 
-                  <div className="bg-surface-50 p-4 rounded-xl text-sm border border-surface-200">
-                    <div className="flex justify-between mb-3 border-b border-surface-200 pb-2">
-                      <span className="text-surface-600">Dietary Profile:</span>
-                      <span className="font-bold capitalize">{scanResult.dietary}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-surface-600">Allergens Detected:</span>
-                      <span className="font-bold text-red-600">{scanResult.allergens.join(', ')}</span>
-                    </div>
-                  </div>
-
                   <button 
                     onClick={handleConfirmAdd}
                     className="w-full btn-primary py-3 flex justify-center mt-4 text-base"
                   >
                     <Plus className="w-5 h-5 mr-1" />
-                    Confirm & Add to Catalog
+                    Confirm & Stock Up (20)
                   </button>
                 </div>
               )}

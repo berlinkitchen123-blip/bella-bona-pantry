@@ -9,7 +9,7 @@ import { Search } from 'lucide-react';
 export default function CatalogPage() {
   const [activeCat, setActiveCat] = useState<Category | 'all'>('all');
   const [search, setSearch] = useState('');
-  const { inventory, catalog } = useOrders();
+  const { stockCounts, catalog } = useOrders();
 
   const filteredItems = useMemo(() => {
     return catalog.filter(item => {
@@ -63,7 +63,7 @@ export default function CatalogPage() {
             <ItemCard
               key={item.id}
               item={item}
-              inStock={inventory[item.id] !== false}
+              stockCount={stockCounts[item.id] ?? 0}
             />
           ))}
         </div>
