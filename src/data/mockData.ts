@@ -1,0 +1,175 @@
+import type {  PantryItem, Order  } from '../types';
+
+export const CATEGORIES = [
+  { key: 'dairy',      label: 'Milk & Dairy',  icon: '🥛', color: '#dbeafe' },
+  { key: 'bakery',     label: 'Bakery',        icon: '🥐', color: '#fef3c7' },
+  { key: 'drinks',     label: 'Drinks',        icon: '🧃', color: '#d1fae5' },
+  { key: 'snacks',     label: 'Snacks',        icon: '🍪', color: '#fce7f3' },
+  { key: 'fruits',     label: 'Fruits & Veg',  icon: '🍎', color: '#dcfce7' },
+  { key: 'essentials', label: 'Essentials',     icon: '📦', color: '#f3e8ff' },
+] as const;
+
+export const PANTRY_ITEMS: PantryItem[] = [
+  // Dairy
+  { id: 'd1', name: 'Full-Fat Milk',         category: 'dairy', unit: 'crate (6×1L)',   emoji: '🥛', inStock: true  },
+  { id: 'd2', name: 'Semi-Skimmed Milk',     category: 'dairy', unit: 'crate (6×1L)',   emoji: '🥛', inStock: true  },
+  { id: 'd3', name: 'Oat Milk Barista',      category: 'dairy', unit: 'pack (6×1L)',    emoji: '🌾', inStock: true  },
+  { id: 'd4', name: 'Greek Yoghurt',         category: 'dairy', unit: 'tub (5kg)',      emoji: '🥣', inStock: true  },
+  { id: 'd5', name: 'Butter Portions',       category: 'dairy', unit: 'box (100 pcs)',  emoji: '🧈', inStock: true  },
+  { id: 'd6', name: 'Cream Cheese',          category: 'dairy', unit: 'pack (1kg)',     emoji: '🧀', inStock: false },
+  { id: 'd7', name: 'Shredded Mozzarella',   category: 'dairy', unit: 'bag (2kg)',      emoji: '🧀', inStock: true  },
+  { id: 'd8', name: 'Whipped Cream',         category: 'dairy', unit: 'canister (500ml)', emoji: '🍦', inStock: true  },
+
+  // Bakery
+  { id: 'b1', name: 'Sourdough Loaf',        category: 'bakery', unit: 'loaf',           emoji: '🍞', inStock: true  },
+  { id: 'b2', name: 'Multigrain Bread',      category: 'bakery', unit: 'loaf',           emoji: '🍞', inStock: true  },
+  { id: 'b3', name: 'Croissants',            category: 'bakery', unit: 'box (12 pcs)',   emoji: '🥐', inStock: true  },
+  { id: 'b4', name: 'Pain au Chocolat',      category: 'bakery', unit: 'box (12 pcs)',   emoji: '🥐', inStock: true  },
+  { id: 'b5', name: 'Brioche Buns',          category: 'bakery', unit: 'pack (8 pcs)',   emoji: '🍔', inStock: true  },
+  { id: 'b6', name: 'Pretzel Sticks',        category: 'bakery', unit: 'box (20 pcs)',   emoji: '🥨', inStock: false },
+  { id: 'b7', name: 'Gluten-Free Rolls',     category: 'bakery', unit: 'pack (6 pcs)',   emoji: '🍞', inStock: true  },
+
+  // Drinks
+  { id: 'dr1', name: 'Still Water',          category: 'drinks', unit: 'crate (24×500ml)', emoji: '💧', inStock: true  },
+  { id: 'dr2', name: 'Sparkling Water',      category: 'drinks', unit: 'crate (24×500ml)', emoji: '💧', inStock: true  },
+  { id: 'dr3', name: 'Orange Juice',         category: 'drinks', unit: 'pack (12×330ml)',  emoji: '🍊', inStock: true  },
+  { id: 'dr4', name: 'Apple Juice',          category: 'drinks', unit: 'pack (12×330ml)',  emoji: '🍎', inStock: true  },
+  { id: 'dr5', name: 'Coffee Beans (Arabica)', category: 'drinks', unit: 'bag (1kg)',       emoji: '☕', inStock: true  },
+  { id: 'dr6', name: 'Assorted Tea Box',     category: 'drinks', unit: 'box (100 bags)',  emoji: '🍵', inStock: true  },
+  { id: 'dr7', name: 'Coca-Cola',            category: 'drinks', unit: 'crate (24×330ml)', emoji: '🥤', inStock: true  },
+  { id: 'dr8', name: 'Club Mate',            category: 'drinks', unit: 'crate (24×330ml)', emoji: '🧉', inStock: false },
+
+  // Snacks
+  { id: 's1', name: 'Mixed Nuts',            category: 'snacks', unit: 'bag (1kg)',       emoji: '🥜', inStock: true  },
+  { id: 's2', name: 'Granola Bars',          category: 'snacks', unit: 'box (24 pcs)',   emoji: '🍫', inStock: true  },
+  { id: 's3', name: 'Dark Chocolate Bites',  category: 'snacks', unit: 'box (50 pcs)',   emoji: '🍫', inStock: true  },
+  { id: 's4', name: 'Rice Cakes',            category: 'snacks', unit: 'pack (12 pcs)',  emoji: '🍘', inStock: true  },
+  { id: 's5', name: 'Trail Mix',             category: 'snacks', unit: 'bag (500g)',     emoji: '🥜', inStock: true  },
+  { id: 's6', name: 'Popcorn (Sea Salt)',    category: 'snacks', unit: 'pack (12 bags)', emoji: '🍿', inStock: true  },
+
+  // Fruits & Veg
+  { id: 'f1', name: 'Banana Box',            category: 'fruits', unit: 'box (≈40 pcs)',  emoji: '🍌', inStock: true  },
+  { id: 'f2', name: 'Apple Assortment',      category: 'fruits', unit: 'crate (≈30 pcs)', emoji: '🍏', inStock: true  },
+  { id: 'f3', name: 'Seasonal Fruit Bowl',   category: 'fruits', unit: 'bowl',           emoji: '🍇', inStock: true  },
+  { id: 'f4', name: 'Cherry Tomatoes',       category: 'fruits', unit: 'box (2kg)',      emoji: '🍅', inStock: true  },
+  { id: 'f5', name: 'Mixed Salad Leaves',    category: 'fruits', unit: 'bag (500g)',     emoji: '🥬', inStock: false },
+
+  // Essentials
+  { id: 'e1', name: 'Paper Towels',          category: 'essentials', unit: 'pack (6 rolls)',    emoji: '🧻', inStock: true  },
+  { id: 'e2', name: 'Napkins',               category: 'essentials', unit: 'pack (200 pcs)',    emoji: '🧻', inStock: true  },
+  { id: 'e3', name: 'Dish Soap',             category: 'essentials', unit: 'bottle (1L)',       emoji: '🧴', inStock: true  },
+  { id: 'e4', name: 'Hand Sanitiser',        category: 'essentials', unit: 'bottle (500ml)',    emoji: '🧴', inStock: true  },
+  { id: 'e5', name: 'Bin Bags (120L)',        category: 'essentials', unit: 'roll (25 bags)',    emoji: '🗑️', inStock: true  },
+  { id: 'e6', name: 'Cling Film',            category: 'essentials', unit: 'roll',              emoji: '📦', inStock: true  },
+];
+
+export const DEMO_ORDERS: Order[] = [
+  {
+    id: 'ORD-2026-0041',
+    items: [
+      { item: PANTRY_ITEMS[0], quantity: 2 },
+      { item: PANTRY_ITEMS[2], quantity: 1 },
+      { item: PANTRY_ITEMS[8], quantity: 3 },
+      { item: PANTRY_ITEMS[15], quantity: 1 },
+      { item: PANTRY_ITEMS[30], quantity: 1 },
+    ],
+    deliveryType: 'standard',
+    deliveryDate: '2026-04-15',
+    companyAddress: '123 Business Rd, Berlin',
+    surcharge: 0,
+    placedAt: '2026-04-14T09:15:00Z',
+    status: 'delivered',
+    companyName: 'TechFlow GmbH',
+    companyEmail: 'office@techflow.de',
+    haccpChecked: true,
+    invoiceTotal: 187.50,
+  },
+  {
+    id: 'ORD-2026-0040',
+    items: [
+      { item: PANTRY_ITEMS[0], quantity: 3 },
+      { item: PANTRY_ITEMS[3], quantity: 2 },
+      { item: PANTRY_ITEMS[10], quantity: 2 },
+      { item: PANTRY_ITEMS[17], quantity: 1 },
+      { item: PANTRY_ITEMS[23], quantity: 2 },
+      { item: PANTRY_ITEMS[36], quantity: 1 },
+    ],
+    deliveryType: 'specific_time',
+    deliveryDate: '2026-04-16',
+    deliveryTimeWindow: '08:00 - 09:00',
+    companyAddress: '123 Business Rd, Berlin',
+    surcharge: 89,
+    placedAt: '2026-04-13T07:30:00Z',
+    status: 'invoiced',
+    companyName: 'TechFlow GmbH',
+    companyEmail: 'office@techflow.de',
+    haccpChecked: true,
+    invoiceTotal: 312.40,
+  },
+  {
+    id: 'ORD-2026-0039',
+    items: [
+      { item: PANTRY_ITEMS[1], quantity: 2 },
+      { item: PANTRY_ITEMS[9], quantity: 4 },
+      { item: PANTRY_ITEMS[15], quantity: 2 },
+    ],
+    deliveryType: 'standard',
+    deliveryDate: '2026-04-17',
+    companyAddress: '99 Leaf Ave, Munich',
+    surcharge: 0,
+    placedAt: '2026-04-11T10:00:00Z',
+    status: 'delivered',
+    companyName: 'GreenLeaf Consulting',
+    companyEmail: 'pantry@greenleaf.eu',
+    haccpChecked: true,
+    invoiceTotal: 145.00,
+  },
+  {
+    id: 'ORD-2026-0042',
+    items: [
+      { item: PANTRY_ITEMS[4], quantity: 1 },
+      { item: PANTRY_ITEMS[16], quantity: 2 },
+      { item: PANTRY_ITEMS[20], quantity: 1 },
+      { item: PANTRY_ITEMS[24], quantity: 3 },
+      { item: PANTRY_ITEMS[31], quantity: 1 },
+    ],
+    deliveryType: 'standard',
+    deliveryDate: '2026-04-18',
+    companyAddress: '42 Pixel St, Hamburg',
+    surcharge: 0,
+    placedAt: '2026-04-15T08:45:00Z',
+    status: 'confirmed',
+    companyName: 'PixelWorks AG',
+    companyEmail: 'office@pixelworks.de',
+  },
+  {
+    id: 'ORD-2026-0043',
+    items: [
+      { item: PANTRY_ITEMS[0], quantity: 4 },
+      { item: PANTRY_ITEMS[2], quantity: 2 },
+      { item: PANTRY_ITEMS[8], quantity: 5 },
+      { item: PANTRY_ITEMS[10], quantity: 3 },
+      { item: PANTRY_ITEMS[15], quantity: 2 },
+      { item: PANTRY_ITEMS[19], quantity: 2 },
+      { item: PANTRY_ITEMS[24], quantity: 1 },
+      { item: PANTRY_ITEMS[30], quantity: 2 },
+      { item: PANTRY_ITEMS[35], quantity: 1 },
+    ],
+    deliveryType: 'specific_time',
+    deliveryDate: '2026-04-19',
+    deliveryTimeWindow: '09:00 - 10:00',
+    companyAddress: '123 Business Rd, Berlin',
+    surcharge: 89,
+    placedAt: '2026-04-15T06:20:00Z',
+    status: 'pending',
+    companyName: 'TechFlow GmbH',
+    companyEmail: 'office@techflow.de',
+  },
+];
+
+export const DEMO_COMPANIES = [
+  { name: 'TechFlow GmbH',       email: 'office@techflow.de' },
+  { name: 'GreenLeaf Consulting', email: 'pantry@greenleaf.eu' },
+  { name: 'PixelWorks AG',        email: 'office@pixelworks.de' },
+  { name: 'Momentum Ventures',    email: 'ops@momentum.vc' },
+];
