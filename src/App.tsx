@@ -19,7 +19,6 @@ function ProtectedRoute({ children, reqAdmin = false }: { children: ReactNode, r
   const { user, isAdmin } = useAuth();
   if (!user) return <Navigate to="/" replace />;
   if (reqAdmin && !isAdmin) return <Navigate to="/catalog" replace />;
-  if (!reqAdmin && isAdmin) return <Navigate to="/admin/fulfillment" replace />;
   return children;
 }
 
