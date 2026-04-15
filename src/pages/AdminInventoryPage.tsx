@@ -108,60 +108,74 @@ export default function AdminInventoryPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    {isEditing ? (
-                      <div className="flex items-center gap-1 animate-scale-in">
-                        <input
-                          type="number"
-                          value={tempCount}
-                          onChange={(e) => setTempCount(e.target.value)}
-                          className="w-16 px-2 py-1 border border-brand-300 rounded-lg text-sm font-bold text-surface-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                          autoFocus
-                          onKeyDown={(e) => e.key === 'Enter' && saveEdit(item.id)}
-                        />
-                        <button 
-                          onClick={() => saveEdit(item.id)}
-                          className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                        >
-                          <Save className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 bg-surface-50 px-2 py-1 rounded-xl border border-surface-100">
-                        <button 
-                          onClick={() => updateStockCount(item.id, count - 1)}
-                          className="p-1 hover:bg-surface-200 rounded-md transition-colors text-surface-500"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span 
-                          onClick={() => startEdit(item)}
-                          className={`min-w-[40px] text-center font-bold text-sm cursor-pointer hover:text-brand-600 transition-colors ${count === 0 ? 'text-red-500' : 'text-surface-900'}`}
-                        >
-                          {count}
-                        </span>
-                        <button 
-                          onClick={() => updateStockCount(item.id, count + 1)}
-                          className="p-1 hover:bg-surface-200 rounded-md transition-colors text-surface-500"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
+                <div className="flex items-center gap-6">
+                  {/* Stock Control Unit */}
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[10px] font-bold text-surface-400 uppercase tracking-tight mr-1">Current Stock</span>
+                    <div className="flex items-center gap-2">
+                      {isEditing ? (
+                        <div className="flex items-center gap-1 animate-scale-in">
+                          <input
+                            type="number"
+                            value={tempCount}
+                            onChange={(e) => setTempCount(e.target.value)}
+                            className="w-20 px-3 py-2 border-2 border-brand-500 rounded-xl text-base font-bold text-surface-900 focus:outline-none focus:ring-4 focus:ring-brand-500/10 shadow-sm"
+                            autoFocus
+                            onKeyDown={(e) => e.key === 'Enter' && saveEdit(item.id)}
+                          />
+                          <button 
+                            onClick={() => saveEdit(item.id)}
+                            className="p-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all shadow-md active:scale-95 flex items-center justify-center font-bold"
+                            title="Save changes"
+                          >
+                            <Save className="w-5 h-5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 bg-white px-2 py-1.5 rounded-2xl border-2 border-surface-200 shadow-sm hover:border-brand-200 transition-all group-hover:shadow-md">
+                          <button 
+                            onClick={() => updateStockCount(item.id, count - 1)}
+                            className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-90"
+                            title="Decrease stock"
+                          >
+                            <Minus className="w-5 h-5" />
+                          </button>
+                          
+                          <div 
+                            onClick={() => startEdit(item)}
+                            className={`min-w-[60px] px-2 text-center text-xl font-black cursor-pointer hover:text-brand-600 transition-colors ${count === 0 ? 'text-red-500' : 'text-surface-900'}`}
+                            title="Click to type number"
+                          >
+                            {count}
+                          </div>
+
+                          <button 
+                            onClick={() => updateStockCount(item.id, count + 1)}
+                            className="w-10 h-10 flex items-center justify-center bg-green-50 text-green-600 rounded-xl hover:bg-green-500 hover:text-white transition-all shadow-sm active:scale-90"
+                            title="Increase stock"
+                          >
+                            <Plus className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      if(window.confirm(`Are you sure you want to remove ${item.name} from the catalog?`)) {
-                        removeCatalogItem(item.id);
-                      }
-                    }}
-                    className="p-2 text-surface-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                    title="Remove item"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {/* Removal Action */}
+                  <div className="flex flex-col items-center gap-1 pt-4">
+                     <button
+                        onClick={() => {
+                          if(window.confirm(`Are you sure you want to remove ${item.name} from the catalog?`)) {
+                            removeCatalogItem(item.id);
+                          }
+                        }}
+                        className="p-3 text-surface-300 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all border border-transparent hover:border-red-100 group/trash shadow-sm hover:shadow-md"
+                        title="Delete this product"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                      <span className="text-[9px] font-bold text-surface-400 group-hover:text-red-400 transition-colors uppercase">Delete</span>
+                  </div>
                 </div>
               </div>
             );
