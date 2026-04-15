@@ -11,7 +11,7 @@ export default function Header() {
   if (!user) return null;
 
   const isActive = (path: string) =>
-    location.pathname === path
+    location.pathname === path || location.pathname === `/${path}`
       ? 'text-brand-600 border-b-2 border-brand-500'
       : 'text-surface-500 hover:text-surface-800';
 
@@ -39,22 +39,22 @@ export default function Header() {
             {isAdmin ? (
               <>
                 <Link
-                  to="/admin/fulfillment"
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('/admin/fulfillment')}`}
+                  to="admin/fulfillment"
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('admin/fulfillment')}`}
                 >
                   <ClipboardList className="w-4 h-4" />
                   Fulfillment
                 </Link>
                 <Link
-                  to="/admin/inventory"
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('/admin/inventory')}`}
+                  to="admin/inventory"
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('admin/inventory')}`}
                 >
                   <Package className="w-4 h-4" />
                   Inventory
                 </Link>
                 <Link
-                  to="/admin/invoices"
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('/admin/invoices')}`}
+                  to="admin/invoices"
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('admin/invoices')}`}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -68,15 +68,15 @@ export default function Header() {
             ) : (
               <>
                 <Link
-                  to="/catalog"
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('/catalog')}`}
+                  to="catalog"
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('catalog')}`}
                 >
                   <Package className="w-4 h-4" />
                   Catalog
                 </Link>
                 <Link
-                  to="/orders"
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('/orders')}`}
+                  to="orders"
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('orders')}`}
                 >
                   <ClipboardList className="w-4 h-4" />
                   My Orders
@@ -90,7 +90,7 @@ export default function Header() {
             {/* Cart badge (customer only) */}
             {!isAdmin && (
               <Link
-                to="/catalog"
+                to="catalog"
                 className="relative p-2 rounded-xl hover:bg-surface-100 transition-colors"
               >
                 <ShoppingCart className="w-5 h-5 text-surface-600" />

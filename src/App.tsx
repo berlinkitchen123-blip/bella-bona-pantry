@@ -36,16 +36,19 @@ function AppRoutes() {
 
       <main className={user ? "bg-surface-50 min-h-[calc(100vh-64px)]" : ""}>
         <Routes>
-          <Route path="/" element={user ? <Navigate to={isAdmin ? "/admin/fulfillment" : "/catalog"} /> : <LoginPage />} />
+          <Route path="/" element={user ? <Navigate to={isAdmin ? "admin/fulfillment" : "catalog"} replace /> : <LoginPage />} />
 
           {/* Customer */}
-          <Route path="/catalog" element={<ProtectedRoute><CatalogPage /></ProtectedRoute>} />
-          <Route path="/orders" element={<ProtectedRoute><CustomerOrdersPage /></ProtectedRoute>} />
+          <Route path="catalog" element={<ProtectedRoute><CatalogPage /></ProtectedRoute>} />
+          <Route path="orders" element={<ProtectedRoute><CustomerOrdersPage /></ProtectedRoute>} />
 
           {/* Admin */}
-          <Route path="/admin/fulfillment" element={<ProtectedRoute reqAdmin><AdminFulfillmentPage /></ProtectedRoute>} />
-          <Route path="/admin/inventory" element={<ProtectedRoute reqAdmin><AdminInventoryPage /></ProtectedRoute>} />
-          <Route path="/admin/invoices" element={<ProtectedRoute reqAdmin><AdminInvoicesPage /></ProtectedRoute>} />
+          <Route path="admin/fulfillment" element={<ProtectedRoute reqAdmin><AdminFulfillmentPage /></ProtectedRoute>} />
+          <Route path="admin/inventory" element={<ProtectedRoute reqAdmin><AdminInventoryPage /></ProtectedRoute>} />
+          <Route path="admin/invoices" element={<ProtectedRoute reqAdmin><AdminInvoicesPage /></ProtectedRoute>} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </>
