@@ -32,10 +32,12 @@ export default function AdminFulfillmentPage() {
     activeOrders.forEach(order => {
       if (order.items) {
         order.items.forEach(entry => {
-          if (!list[entry.item.id]) {
-            list[entry.item.id] = { item: entry.item, totalQty: 0 };
+          if (entry.item && entry.item.id) {
+            if (!list[entry.item.id]) {
+              list[entry.item.id] = { item: entry.item, totalQty: 0 };
+            }
+            list[entry.item.id].totalQty += entry.quantity;
           }
-          list[entry.item.id].totalQty += entry.quantity;
         });
       }
     });
@@ -208,20 +210,23 @@ export default function AdminFulfillmentPage() {
                   </div>
 
                   <div className="p-6 space-y-3 flex-1 overflow-y-auto max-h-60 custom-scrollbar">
-                    {order.items.map((entry, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-sm py-2 border-b border-surface-50 last:border-0 hover:bg-brand-50/50 rounded-xl px-2 transition-colors group/item">
-                        <span className="flex items-center gap-3">
-                          <span className="text-xl group-hover/item:scale-110 transition-transform">{entry.item.emoji}</span>
-                          <div>
-                            <p className="font-bold text-surface-900 break-words max-w-[150px]">{entry.item.name}</p>
-                            <p className="text-[9px] font-black text-brand-700 uppercase tracking-tighter">{entry.item.dietary !== 'none' ? entry.item.dietary : ''}</p>
+                    {order.items.map((entry, idx) => {
+                      if (!entry.item) return null;
+                      return (
+                        <div key={idx} className="flex items-center justify-between text-sm py-2 border-b border-surface-50 last:border-0 hover:bg-brand-50/50 rounded-xl px-2 transition-colors group/item">
+                          <span className="flex items-center gap-3">
+                            <span className="text-xl group-hover/item:scale-110 transition-transform">{entry.item.emoji}</span>
+                            <div>
+                              <p className="font-bold text-surface-900 break-words max-w-[150px]">{entry.item.name}</p>
+                              <p className="text-[9px] font-black text-brand-700 uppercase tracking-tighter">{entry.item.dietary !== 'none' ? entry.item.dietary : ''}</p>
+                            </div>
+                          </span>
+                          <div className="w-8 h-8 bg-surface-100 rounded-lg flex items-center justify-center font-black text-surface-900 shadow-inner">
+                             {entry.quantity}
                           </div>
-                        </span>
-                        <div className="w-8 h-8 bg-surface-100 rounded-lg flex items-center justify-center font-black text-surface-900 shadow-inner">
-                           {entry.quantity}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {order.customRequests && (
