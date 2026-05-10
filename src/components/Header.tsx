@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { ShoppingCart, ClipboardList, LogOut, Package } from 'lucide-react';
+import { ShoppingCart, ClipboardList, LogOut, Package, Building2 } from 'lucide-react';
 
 export default function Header() {
   const { user, logout, isAdmin } = useAuth();
@@ -66,6 +66,13 @@ export default function Header() {
                     <line x1="16" y1="17" x2="8" y2="17" />
                   </svg>
                   Invoices
+                </Link>
+                <Link
+                  to="admin/customers"
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold transition-all ${isActive('admin/customers')}`}
+                >
+                  <Building2 className="w-4 h-4" />
+                  Customers
                 </Link>
               </>
             ) : (

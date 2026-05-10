@@ -46,4 +46,17 @@ export interface User {
   role: 'customer' | 'admin';
 }
 
+export interface Customer {
+  id: string;
+  companyName: string;
+  contactPerson: string;
+  email: string;
+  address: string;
+  status: 'active' | 'pending' | 'suspended';
+  pantryTier: 'basic' | 'premium' | 'enterprise';
+  onboardedAt: string;
+  lastLogin?: string;
+  allowSpecificTime: boolean;
+}
+
 export const __TYPES_DUMMY__ = true;
