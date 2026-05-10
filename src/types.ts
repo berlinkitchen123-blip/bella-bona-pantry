@@ -63,6 +63,7 @@ export interface Order {
   invoiceTotal?: number;   // assigned by admin
   notes?: string;
   customRequests?: string;
+  notionSyncStatus?: 'synced' | 'pending' | 'failed';
 }
 
 export interface User {

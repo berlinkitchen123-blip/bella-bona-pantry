@@ -1,31 +1,51 @@
 import { useMemo } from 'react';
 import { useOrders } from '../context/OrderContext';
-import { PackageOpen, ShieldCheck, MapPin, CalendarClock, MessageSquare, Bell, CreditCard, Truck, AlertTriangle, CheckCircle } from 'lucide-react';
+import { 
+  PackageOpen, 
+  ShieldCheck, 
+  MapPin, 
+  CalendarClock, 
+  MessageSquare, 
+  Bell, 
+  CreditCard, 
+  Truck, 
+  AlertTriangle, 
+  CheckCircle,
+  Activity as ActivityIcon,
+  RefreshCw,
+  ExternalLink
+} from 'lucide-react';
 import type { CartEntry } from '../types';
 
 export default function AdminFulfillmentPage() {
-  const { orders, toggleHaccp, updateOrderStatus, notifications, markNotificationRead } = useOrders();
+  const { orders, toggleHaccp, updateOrderStatus, notifications, markNotificationRead, syncToNotion } = useOrders();
 
-  const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'confirmed' || o.status === 'packed');
-  const unreadNotifications = notifications.filter(n => n.status === 'unread');
+  // Guard against missing data during context initialization
+  const safeOrders = orders || [];
+  const safeNotifications = notifications || [];
+
+  const activeOrders = safeOrders.filter(o => o.status === 'pending' || o.status === 'confirmed' || o.status === 'packed');
+  const unreadNotifications = safeNotifications.filter(n => n.status === 'unread');
 
   const picklist = useMemo(() => {
     const list: Record<string, { item: CartEntry['item'], totalQty: number }> = {};
     activeOrders.forEach(order => {
-      order.items.forEach(entry => {
-        if (!list[entry.item.id]) {
-          list[entry.item.id] = { item: entry.item, totalQty: 0 };
-        }
-        list[entry.item.id].totalQty += entry.quantity;
-      });
+      if (order.items) {
+        order.items.forEach(entry => {
+          if (!list[entry.item.id]) {
+            list[entry.item.id] = { item: entry.item, totalQty: 0 };
+          }
+          list[entry.item.id].totalQty += entry.quantity;
+        });
+      }
     });
-    return Object.values(list).sort((a, b) => a.item.category.localeCompare(b.item.category));
+    return Object.values(list).sort((a, b) => (a.item?.category || '').localeCompare(b.item?.category || ''));
   }, [activeOrders]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in font-sans">
       
-      {/* Point: Automation Notification Hub */}
+      {/* Point: Operational Control Hub */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
          <div className="md:col-span-3">
             <h1 className="text-3xl font-black text-brand-900 tracking-tight mb-1">Operational Control</h1>
@@ -39,22 +59,22 @@ export default function AdminFulfillmentPage() {
                </div>
                <div>
                   <p className="text-[10px] font-black uppercase text-surface-400">Total Alerts</p>
-                  <p className="text-lg font-black text-brand-900 leading-tight">{notifications.length}</p>
+                  <p className="text-lg font-black text-brand-900 leading-tight">{safeNotifications.length}</p>
                </div>
             </div>
             <button className="text-[10px] font-black text-brand-700 bg-brand-50 px-3 py-1.5 rounded-lg active:scale-95 transition-transform">SYSTEM LOG</button>
          </div>
       </div>
 
-      {notifications.length > 0 && (
+      {safeNotifications.length > 0 && (
          <div className="mb-12">
             <div className="flex items-center justify-between mb-4">
                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-surface-400 flex items-center gap-2">
-                  <Activity className="w-3.5 h-3.5" /> Departmental Urgent Tasks
+                  <ActivityIcon className="w-3.5 h-3.5" /> Departmental Urgent Tasks
                </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 overflow-x-auto no-scrollbar">
-               {notifications.slice(0, 3).map(notif => (
+               {safeNotifications.slice(0, 3).map(notif => (
                   <div key={notif.id} className={`p-5 rounded-[24px] border transition-all ${
                      notif.status === 'unread' ? 'bg-white shadow-xl shadow-brand-900/5 border-brand-100 ring-1 ring-brand-900/5 translate-y-[-2px]' : 'bg-surface-50 border-surface-100 opacity-60'
                   }`}>
@@ -87,7 +107,7 @@ export default function AdminFulfillmentPage() {
          </div>
       )}
 
-      {/* Existing Fulfillment UI */}
+      {/* Main Grid UI */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-4">
           <h2 className="text-xs font-black uppercase tracking-[0.2em] text-surface-400 flex items-center gap-2 px-2">
@@ -137,7 +157,23 @@ export default function AdminFulfillmentPage() {
                   <div className="p-6 border-b border-surface-50 bg-surface-50/50">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="text-xl font-black text-brand-900 tracking-tighter">{order.id}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                           <h3 className="text-xl font-black text-brand-900 tracking-tighter">{order.id}</h3>
+                           
+                           {/* Notion Sync Indicator */}
+                           <div 
+                              onClick={() => syncToNotion(order.id)}
+                              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border cursor-pointer hover:scale-105 transition-all ${
+                                 order.notionSyncStatus === 'synced' ? 'bg-green-50 border-green-100 text-green-700' :
+                                 order.notionSyncStatus === 'pending' ? 'bg-brand-50 border-brand-100 text-brand-700' :
+                                 'bg-red-50 border-red-100 text-red-700'
+                              }`}
+                              title={order.notionSyncStatus === 'synced' ? 'Reflected on Notion Logistics Board' : 'Sync Pending'}
+                           >
+                              {order.notionSyncStatus === 'pending' ? <RefreshCw className="w-2.5 h-2.5 animate-spin" /> : <ExternalLink className="w-2.5 h-2.5" />}
+                              <span className="text-[8px] font-black uppercase tracking-tighter">Notion</span>
+                           </div>
+                        </div>
                         <p className="text-xs font-black text-surface-400 uppercase tracking-widest">{order.companyName}</p>
                       </div>
                       <select
@@ -172,8 +208,8 @@ export default function AdminFulfillmentPage() {
                   </div>
 
                   <div className="p-6 space-y-3 flex-1 overflow-y-auto max-h-60 custom-scrollbar">
-                    {order.items.map(entry => (
-                      <div key={entry.item.id} className="flex items-center justify-between text-sm py-2 border-b border-surface-50 last:border-0 hover:bg-brand-50/50 rounded-xl px-2 transition-colors group/item">
+                    {order.items.map((entry, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm py-2 border-b border-surface-50 last:border-0 hover:bg-brand-50/50 rounded-xl px-2 transition-colors group/item">
                         <span className="flex items-center gap-3">
                           <span className="text-xl group-hover/item:scale-110 transition-transform">{entry.item.emoji}</span>
                           <div>
@@ -225,12 +261,4 @@ export default function AdminFulfillmentPage() {
       </div>
     </div>
   );
-}
-
-function Activity({ className }: { className?: string }) {
-   return (
-      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-         <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-      </svg>
-   )
 }

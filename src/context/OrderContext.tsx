@@ -16,19 +16,20 @@ interface OrderContextType {
   stockCounts: Record<string, number>;
   updateStockCount: (itemId: string, count: number) => void;
   
-  // New: Marketing & Automation
   promotions: Promotion[];
   updatePromotion: (id: string, active: boolean) => void;
   notifications: AdminNotification[];
   markNotificationRead: (id: string) => void;
+
+  // New: Notion Sync
+  syncToNotion: (orderId: string) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextType | null>(null);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
-  const [orders, setOrders] = useState<Order[]>(DEMO_ORDERS);
+  const [orders, setOrders] = useState<Order[]>(DEMO_ORDERS.map(o => ({ ...o, notionSyncStatus: 'synced' })));
   
-  // Advanced Initial Data
   const initialItems = [...PANTRY_ITEMS].map(i => {
     const base = { ...i, stockCount: (i.inStock ? 50 : 0) + (Math.floor(Math.random() * 20)), bestBefore: '2026-06-25' };
     if(base.category === 'dairy') return { ...base, dietary: 'lactose-free', allergens: ['Certified Lactose Free'] } as PantryItem;
@@ -50,9 +51,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
 
-  // Point: Automation - Low Stock Check
+  // Simulation: Automated Restock Alerts
   useEffect(() => {
-    const lowItems = catalog.filter(item => stockCounts[item.id] < 10);
+    const lowItems = catalog.filter(item => (stockCounts[item.id] ?? 0) < 10);
     if (lowItems.length > 0) {
       const newNotif: AdminNotification = {
         id: `inv-${Date.now()}`,
@@ -62,9 +63,32 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         status: 'unread',
         timestamp: new Date().toISOString()
       };
-      setNotifications(prev => [newNotif, ...prev.slice(0, 9)]);
+      setNotifications(prev => {
+         if (prev.some(p => p.title === newNotif.title)) return prev;
+         return [newNotif, ...prev.slice(0, 9)];
+      });
     }
   }, [stockCounts, catalog]);
+
+  // Point: Notion Sync Simulation
+  const syncToNotion = useCallback(async (orderId: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, notionSyncStatus: 'pending' } : o));
+    
+    // Simulate API Call to Notion Webhook
+    await new Promise(r => setTimeout(r, 2000));
+    
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, notionSyncStatus: 'synced' } : o));
+    
+    const notionNotif: AdminNotification = {
+      id: `notion-${Date.now()}`,
+      type: 'logistics',
+      title: 'Notion Sync Success',
+      message: `Order ${orderId} has been successfully reflected in the Global Logistics Board on Notion.`,
+      status: 'unread',
+      timestamp: new Date().toISOString()
+    };
+    setNotifications(prev => [notionNotif, ...prev]);
+  }, []);
 
   const addCatalogItem = useCallback((item: PantryItem) => {
     setCatalog(prev => [item, ...prev]);
@@ -96,11 +120,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       companyName,
       companyEmail,
       companyAddress,
-      customRequests: customRequests || undefined
+      customRequests: customRequests || undefined,
+      notionSyncStatus: 'pending'
     };
     setOrders(prev => [order, ...prev]);
     
-    // Notification for Logistics
+    // Auto-trigger Notion Sync
+    setTimeout(() => syncToNotion(order.id), 500);
+
     const logisticsNotif: AdminNotification = {
       id: `log-${Date.now()}`,
       type: 'logistics',
@@ -112,12 +139,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => [logisticsNotif, ...prev]);
 
     return order;
-  }, [orders.length]);
+  }, [orders.length, syncToNotion]);
 
   const updateOrderStatus = useCallback((orderId: string, status: Order['status']) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
     
-    // Notification for Finance when delivered
+    // Sync status change to Notion
+    syncToNotion(orderId);
+
     if (status === 'delivered') {
       const financeNotif: AdminNotification = {
         id: `fin-${Date.now()}`,
@@ -129,7 +158,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       };
       setNotifications(prev => [financeNotif, ...prev]);
     }
-  }, [orders]);
+  }, [orders, syncToNotion]);
 
   const toggleHaccp = useCallback((orderId: string) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, haccpChecked: !o.haccpChecked } : o));
@@ -152,7 +181,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       orders, catalog, addCatalogItem, removeCatalogItem, placeOrder, updateOrderStatus, toggleHaccp, setInvoiceTotal,
       stockCounts, updateStockCount,
       promotions, updatePromotion,
-      notifications, markNotificationRead
+      notifications, markNotificationRead,
+      syncToNotion
     }}>
       {children}
     </OrderContext.Provider>
