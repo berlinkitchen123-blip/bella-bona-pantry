@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { ShoppingCart, ClipboardList, LogOut, Package, ChefHat } from 'lucide-react';
+import { ShoppingCart, ClipboardList, LogOut, Package } from 'lucide-react';
 
 export default function Header() {
   const { user, logout, isAdmin } = useAuth();
@@ -12,51 +12,54 @@ export default function Header() {
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname === `/${path}`
-      ? 'text-brand-600 border-b-2 border-brand-500'
-      : 'text-surface-500 hover:text-surface-800';
+      ? 'text-brand-900 border-b-2 border-brand-900'
+      : 'text-surface-500 hover:text-brand-800 transition-colors';
 
   return (
-    <header className="sticky top-0 z-50 glass-panel border-b border-surface-100">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-surface-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-              <ChefHat className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-sm leading-tight tracking-tight text-surface-900">
-                Bella & Bona
-              </span>
-              <span className="text-[10px] font-medium text-surface-400 leading-tight uppercase tracking-wider">
+          <Link to="/" className="flex items-center gap-3 group transition-transform hover:scale-[1.02] active:scale-[0.98]">
+            <img 
+              src="./logo.png" 
+              alt="Bella & Bona" 
+              className="h-6 w-auto object-contain"
+              onError={(e) => {
+                // Fallback if logo fails
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+            <div className="flex flex-col border-l border-brand-100 pl-3">
+              <span className="text-[10px] font-bold text-brand-900 leading-tight uppercase tracking-[0.2em]">
                 {isAdmin ? 'Management' : 'Pantry'}
               </span>
             </div>
           </Link>
 
           {/* Nav Links */}
-          <nav className="hidden sm:flex items-center gap-1">
+          <nav className="hidden sm:flex items-center gap-2">
             {isAdmin ? (
               <>
                 <Link
                   to="admin/fulfillment"
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('admin/fulfillment')}`}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold transition-all ${isActive('admin/fulfillment')}`}
                 >
                   <ClipboardList className="w-4 h-4" />
                   Fulfillment
                 </Link>
                 <Link
                   to="admin/inventory"
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('admin/inventory')}`}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold transition-all ${isActive('admin/inventory')}`}
                 >
                   <Package className="w-4 h-4" />
                   Inventory
                 </Link>
                 <Link
                   to="admin/invoices"
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('admin/invoices')}`}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold transition-all ${isActive('admin/invoices')}`}
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                     <line x1="16" y1="13" x2="8" y2="13" />
@@ -69,14 +72,14 @@ export default function Header() {
               <>
                 <Link
                   to="catalog"
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('catalog')}`}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-all ${isActive('catalog')}`}
                 >
                   <Package className="w-4 h-4" />
                   Catalog
                 </Link>
                 <Link
                   to="orders"
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${isActive('orders')}`}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-all ${isActive('orders')}`}
                 >
                   <ClipboardList className="w-4 h-4" />
                   My Orders
@@ -86,39 +89,39 @@ export default function Header() {
           </nav>
 
           {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {/* Cart badge (customer only) */}
             {!isAdmin && (
               <Link
                 to="catalog"
-                className="relative p-2 rounded-xl hover:bg-surface-100 transition-colors"
+                className="relative p-2.5 rounded-2xl bg-surface-50 hover:bg-brand-50 hover:text-brand-700 transition-all active:scale-95"
               >
-                <ShoppingCart className="w-5 h-5 text-surface-600" />
+                <ShoppingCart className="w-5 h-5" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-brand-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-bounce-in shadow-sm">
+                  <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-brand-900 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 shadow-sm border-2 border-white">
                     {totalItems}
                   </span>
                 )}
               </Link>
             )}
 
-            {/* User info */}
-            <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-surface-200">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-300 to-brand-500 flex items-center justify-center">
-                <span className="text-xs font-bold text-white">
+            {/* User Profile */}
+            <div className="hidden md:flex items-center gap-3 pl-4 border-l border-surface-100">
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-bold text-surface-900 leading-tight">{user.name}</span>
+                <span className="text-[10px] text-brand-700 font-bold leading-tight tracking-wide">{user.company}</span>
+              </div>
+              <div className="w-8 h-8 rounded-2xl bg-brand-900 flex items-center justify-center text-white shadow-sm ring-2 ring-brand-50">
+                <span className="text-xs font-black">
                   {user.name.charAt(0)}
                 </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-semibold text-surface-700 leading-tight">{user.name}</span>
-                <span className="text-[10px] text-surface-400 leading-tight">{user.company}</span>
               </div>
             </div>
 
             {/* Logout */}
             <button
               onClick={logout}
-              className="p-2 rounded-xl hover:bg-red-50 text-surface-400 hover:text-red-500 transition-colors"
+              className="p-2.5 rounded-2xl text-surface-400 hover:text-red-600 hover:bg-red-50 transition-all active:scale-95"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
