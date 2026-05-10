@@ -10,7 +10,8 @@ export interface PantryItem {
   stockCount?: number;  // inventory quantity
   minOrder?: number;
   maxOrder?: number;
-  dietary?: 'vegan' | 'vegetarian' | 'meat' | 'none';
+  dietary?: 'vegan' | 'vegetarian' | 'meat' | 'gluten-free' | 'lactose-free' | 'none';
+  bestBefore?: string; // ISO date for fresh items
   allergens?: string[];
   nutriScore?: 'A' | 'B' | 'C' | 'D' | 'E';
   calories?: number;
@@ -18,6 +19,26 @@ export interface PantryItem {
   sugar?: number;
   fiber?: number;
   votes?: number;
+}
+
+export interface Promotion {
+  id: string;
+  title: string;
+  subtitle: string;
+  type: 'festival' | 'seasonal' | 'flash' | 'discount';
+  active: boolean;
+  color: string;
+  emoji: string;
+}
+
+export interface AdminNotification {
+  id: string;
+  type: 'logistics' | 'finance' | 'inventory';
+  title: string;
+  message: string;
+  status: 'unread' | 'read';
+  timestamp: string;
+  actionUrl?: string;
 }
 
 export interface CartEntry {

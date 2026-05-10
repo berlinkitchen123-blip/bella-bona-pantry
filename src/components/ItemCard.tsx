@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { PantryItem } from '../types';
 import { useCart } from '../context/CartContext';
-import { Minus, Plus, AlertCircle, Info, ThumbsUp, X, Activity, Leaf, Heart } from 'lucide-react';
+import { Minus, Plus, AlertCircle, Info, ThumbsUp, X, Activity, Leaf, Heart, Wheat, Droplets, Calendar } from 'lucide-react';
 import { CATEGORIES } from '../data/mockData';
 
 interface Props {
@@ -85,7 +85,8 @@ export default function ItemCard({ item, stockCount }: Props) {
           {/* Badges */}
           <div className="flex flex-wrap gap-1.5 mb-5 min-h-[22px]">
             {item.dietary === 'vegan' && <span className="px-2 py-0.5 rounded-md bg-green-50 text-green-700 text-[9px] font-black uppercase tracking-wider flex items-center gap-1"><Leaf className="w-2.5 h-2.5" /> Vegan</span>}
-            {item.dietary === 'vegetarian' && <span className="px-2 py-0.5 rounded-md bg-green-50 text-green-700 text-[9px] font-black uppercase tracking-wider">Veg</span>}
+            {item.dietary === 'gluten-free' && <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[9px] font-black uppercase tracking-wider flex items-center gap-1"><Wheat className="w-2.5 h-2.5" /> GF</span>}
+            {item.dietary === 'lactose-free' && <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[9px] font-black uppercase tracking-wider flex items-center gap-1"><Droplets className="w-2.5 h-2.5" /> LF</span>}
             
             {stockCount > 0 && stockCount < 10 && (
               <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[9px] font-black uppercase tracking-wider border border-amber-100">
@@ -164,7 +165,14 @@ export default function ItemCard({ item, stockCount }: Props) {
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h3 className="text-2xl font-black text-brand-900 tracking-tight leading-none mb-2">{item.name}</h3>
-                  <p className="text-sm font-bold text-surface-400 uppercase tracking-widest">{item.category} • {item.unit}</p>
+                  <div className="flex items-center gap-3">
+                     <p className="text-sm font-bold text-surface-400 uppercase tracking-widest">{item.category} • {item.unit}</p>
+                     {item.bestBefore && (
+                       <span className="flex items-center gap-1.5 text-[10px] font-black text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg">
+                          <Calendar className="w-3.5 h-3.5" /> Best Before: {item.bestBefore}
+                       </span>
+                     )}
+                  </div>
                 </div>
                 {item.nutriScore && (
                   <div className="flex flex-col items-center">
@@ -219,7 +227,8 @@ export default function ItemCard({ item, stockCount }: Props) {
                  <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center gap-2">
                        {item.dietary === 'vegan' && <span className="bg-green-100 text-green-800 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase">100% Vegan</span>}
-                       {item.dietary === 'vegetarian' && <span className="bg-green-100 text-green-800 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase">Vegetarian</span>}
+                       {item.dietary === 'gluten-free' && <span className="bg-amber-100 text-amber-800 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase">Gluten-Free</span>}
+                       {item.dietary === 'lactose-free' && <span className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase">Lactose-Free</span>}
                     </div>
                     <button 
                       onClick={() => setShowInfo(false)}

@@ -6,6 +6,7 @@ import { OrderProvider } from './context/OrderContext';
 
 import Header from './components/Header';
 import CartSidebar from './components/CartSidebar';
+import AIChatbot from './components/AIChatbot';
 
 import LoginPage from './pages/LoginPage';
 import CatalogPage from './pages/CatalogPage';
@@ -34,6 +35,8 @@ function AppRoutes() {
       {!isAdmin && user && (
         <CartSidebar onOrderPlaced={(id) => alert(`Order ${id} placed successfully!`)} />
       )}
+
+      {user && <AIChatbot />}
 
       <main className={user ? "bg-surface-50 min-h-[calc(100vh-64px)]" : ""}>
         <Routes>

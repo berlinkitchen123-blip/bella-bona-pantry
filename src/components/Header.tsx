@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { ShoppingCart, ClipboardList, LogOut, Package, Building2 } from 'lucide-react';
+import { ShoppingCart, ClipboardList, LogOut, Package, Building2, Lock } from 'lucide-react';
 
 export default function Header() {
   const { user, logout, isAdmin } = useAuth();
@@ -111,6 +111,12 @@ export default function Header() {
                 )}
               </Link>
             )}
+
+            {/* SSL Lock */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 border border-green-100 rounded-2xl hidden md:flex">
+               <Lock className="w-3.5 h-3.5" />
+               <span className="text-[10px] font-black uppercase tracking-widest">SSL Secure</span>
+            </div>
 
             {/* User Profile */}
             <div className="hidden md:flex items-center gap-3 pl-4 border-l border-surface-100">

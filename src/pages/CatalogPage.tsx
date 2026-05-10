@@ -9,8 +9,10 @@ import { useCart } from '../context/CartContext';
 export default function CatalogPage() {
   const [activeCat, setActiveCat] = useState<Category | 'all'>('all');
   const [search, setSearch] = useState('');
-  const { stockCounts, catalog } = useOrders();
+  const { stockCounts, catalog, promotions } = useOrders();
   const { addItem } = useCart();
+  
+  const activePromo = promotions.find(p => p.active);
 
   const filteredItems = useMemo(() => {
     return catalog.filter(item => {
@@ -52,6 +54,29 @@ export default function CatalogPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in font-sans">
+      
+      {/* Promotion Banner */}
+      {activePromo && (
+        <div 
+          className="mb-10 p-6 rounded-[32px] text-white flex items-center justify-between shadow-lg animate-scale-in relative overflow-hidden"
+          style={{ backgroundColor: activePromo.color }}
+        >
+           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+           <div className="flex items-center gap-6 relative z-10">
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-4xl shadow-inner">
+                 {activePromo.emoji}
+              </div>
+              <div>
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mb-1">{activePromo.type} SPECIAL</p>
+                 <h2 className="text-2xl font-black tracking-tight">{activePromo.title}</h2>
+                 <p className="text-sm font-medium opacity-90">{activePromo.subtitle}</p>
+              </div>
+           </div>
+           <button className="px-8 py-3 bg-white text-brand-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform shadow-xl">
+              Claim Offer
+           </button>
+        </div>
+      )}
       
       {/* Header & Search */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
