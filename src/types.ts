@@ -12,6 +12,12 @@ export interface PantryItem {
   maxOrder?: number;
   dietary?: 'vegan' | 'vegetarian' | 'meat' | 'none';
   allergens?: string[];
+  nutriScore?: 'A' | 'B' | 'C' | 'D' | 'E';
+  calories?: number;
+  protein?: number;
+  sugar?: number;
+  fiber?: number;
+  votes?: number;
 }
 
 export interface CartEntry {

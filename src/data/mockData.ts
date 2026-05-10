@@ -11,55 +11,42 @@ export const CATEGORIES = [
 
 export const PANTRY_ITEMS: PantryItem[] = [
   // Dairy
-  { id: 'd1', name: 'Full-Fat Milk',         category: 'dairy', unit: 'crate (6×1L)',   emoji: '🥛', inStock: true  },
-  { id: 'd2', name: 'Semi-Skimmed Milk',     category: 'dairy', unit: 'crate (6×1L)',   emoji: '🥛', inStock: true  },
-  { id: 'd3', name: 'Oat Milk Barista',      category: 'dairy', unit: 'pack (6×1L)',    emoji: '🌾', inStock: true  },
-  { id: 'd4', name: 'Greek Yoghurt',         category: 'dairy', unit: 'tub (5kg)',      emoji: '🥣', inStock: true  },
-  { id: 'd5', name: 'Butter Portions',       category: 'dairy', unit: 'box (100 pcs)',  emoji: '🧈', inStock: true  },
-  { id: 'd6', name: 'Cream Cheese',          category: 'dairy', unit: 'pack (1kg)',     emoji: '🧀', inStock: false },
-  { id: 'd7', name: 'Shredded Mozzarella',   category: 'dairy', unit: 'bag (2kg)',      emoji: '🧀', inStock: true  },
-  { id: 'd8', name: 'Whipped Cream',         category: 'dairy', unit: 'canister (500ml)', emoji: '🍦', inStock: true  },
+  { id: 'd1', name: 'Full-Fat Milk',         category: 'dairy', unit: 'crate (6×1L)',   emoji: '🥛', inStock: true, nutriScore: 'C', calories: 64, protein: 3.3, sugar: 4.8, fiber: 0, votes: 5  },
+  { id: 'd2', name: 'Semi-Skimmed Milk',     category: 'dairy', unit: 'crate (6×1L)',   emoji: '🥛', inStock: true, nutriScore: 'B', calories: 47, protein: 3.4, sugar: 4.7, fiber: 0, votes: 12 },
+  { id: 'd3', name: 'Oat Milk Barista',      category: 'dairy', unit: 'pack (6×1L)',    emoji: '🌾', inStock: true, nutriScore: 'B', calories: 59, protein: 1.0, sugar: 3.0, fiber: 0.8, votes: 45, dietary: 'vegan' },
+  { id: 'd4', name: 'Greek Yoghurt',         category: 'dairy', unit: 'tub (5kg)',      emoji: '🥣', inStock: true, nutriScore: 'A', calories: 96, protein: 9.0, sugar: 3.5, fiber: 0, votes: 18, dietary: 'vegetarian' },
+  { id: 'd5', name: 'Butter Portions',       category: 'dairy', unit: 'box (100 pcs)',  emoji: '🧈', inStock: true, nutriScore: 'E', calories: 717, protein: 0.8, sugar: 0.1, fiber: 0, votes: 3, dietary: 'vegetarian' },
+  { id: 'd6', name: 'Cream Cheese',          category: 'dairy', unit: 'pack (1kg)',     emoji: '🧀', inStock: false, nutriScore: 'D', calories: 342, protein: 6.0, sugar: 3.2, fiber: 0, votes: 8, dietary: 'vegetarian' },
+  { id: 'd7', name: 'Shredded Mozzarella',   category: 'dairy', unit: 'bag (2kg)',      emoji: '🧀', inStock: true, nutriScore: 'D', calories: 280, protein: 25.0, sugar: 1.0, fiber: 0, votes: 14, dietary: 'vegetarian' },
 
   // Bakery
-  { id: 'b1', name: 'Sourdough Loaf',        category: 'bakery', unit: 'loaf',           emoji: '🍞', inStock: true  },
-  { id: 'b2', name: 'Multigrain Bread',      category: 'bakery', unit: 'loaf',           emoji: '🍞', inStock: true  },
-  { id: 'b3', name: 'Croissants',            category: 'bakery', unit: 'box (12 pcs)',   emoji: '🥐', inStock: true  },
-  { id: 'b4', name: 'Pain au Chocolat',      category: 'bakery', unit: 'box (12 pcs)',   emoji: '🥐', inStock: true  },
-  { id: 'b5', name: 'Brioche Buns',          category: 'bakery', unit: 'pack (8 pcs)',   emoji: '🍔', inStock: true  },
-  { id: 'b6', name: 'Pretzel Sticks',        category: 'bakery', unit: 'box (20 pcs)',   emoji: '🥨', inStock: false },
-  { id: 'b7', name: 'Gluten-Free Rolls',     category: 'bakery', unit: 'pack (6 pcs)',   emoji: '🍞', inStock: true  },
+  { id: 'b1', name: 'Sourdough Loaf',        category: 'bakery', unit: 'loaf',           emoji: '🍞', inStock: true, nutriScore: 'A', calories: 230, protein: 8.0, sugar: 0.5, fiber: 2.4, votes: 22, dietary: 'vegan' },
+  { id: 'b2', name: 'Multigrain Bread',      category: 'bakery', unit: 'loaf',           emoji: '🍞', inStock: true, nutriScore: 'A', calories: 250, protein: 10.0, sugar: 1.5, fiber: 6.0, votes: 31, dietary: 'vegan' },
+  { id: 'b3', name: 'Croissants',            category: 'bakery', unit: 'box (12 pcs)',   emoji: '🥐', inStock: true, nutriScore: 'D', calories: 406, protein: 8.2, sugar: 11.2, fiber: 2.6, votes: 55, dietary: 'vegetarian' },
+  { id: 'b4', name: 'Pain au Chocolat',      category: 'bakery', unit: 'box (12 pcs)',   emoji: '🥐', inStock: true, nutriScore: 'E', calories: 420, protein: 7.5, sugar: 16.0, fiber: 2.4, votes: 48, dietary: 'vegetarian' },
+  { id: 'b7', name: 'Gluten-Free Rolls',     category: 'bakery', unit: 'pack (6 pcs)',   emoji: '🍞', inStock: true, nutriScore: 'B', calories: 210, protein: 4.0, sugar: 2.0, fiber: 4.5, votes: 9  },
 
   // Drinks
-  { id: 'dr1', name: 'Still Water',          category: 'drinks', unit: 'crate (24×500ml)', emoji: '💧', inStock: true  },
-  { id: 'dr2', name: 'Sparkling Water',      category: 'drinks', unit: 'crate (24×500ml)', emoji: '💧', inStock: true  },
-  { id: 'dr3', name: 'Orange Juice',         category: 'drinks', unit: 'pack (12×330ml)',  emoji: '🍊', inStock: true  },
-  { id: 'dr4', name: 'Apple Juice',          category: 'drinks', unit: 'pack (12×330ml)',  emoji: '🍎', inStock: true  },
-  { id: 'dr5', name: 'Coffee Beans (Arabica)', category: 'drinks', unit: 'bag (1kg)',       emoji: '☕', inStock: true  },
-  { id: 'dr6', name: 'Assorted Tea Box',     category: 'drinks', unit: 'box (100 bags)',  emoji: '🍵', inStock: true  },
-  { id: 'dr7', name: 'Coca-Cola',            category: 'drinks', unit: 'crate (24×330ml)', emoji: '🥤', inStock: true  },
-  { id: 'dr8', name: 'Club Mate',            category: 'drinks', unit: 'crate (24×330ml)', emoji: '🧉', inStock: false },
+  { id: 'dr1', name: 'Still Water',          category: 'drinks', unit: 'crate (24×500ml)', emoji: '💧', inStock: true, nutriScore: 'A', calories: 0, votes: 80, dietary: 'vegan' },
+  { id: 'dr3', name: 'Orange Juice',         category: 'drinks', unit: 'pack (12×330ml)',  emoji: '🍊', inStock: true, nutriScore: 'C', calories: 45, sugar: 9.0, fiber: 0.2, votes: 22, dietary: 'vegan' },
+  { id: 'dr5', name: 'Coffee Beans (Arabica)', category: 'drinks', unit: 'bag (1kg)',       emoji: '☕', inStock: true, nutriScore: 'A', calories: 0, votes: 120, dietary: 'vegan' },
+  { id: 'dr7', name: 'Coca-Cola',            category: 'drinks', unit: 'crate (24×330ml)', emoji: '🥤', inStock: true, nutriScore: 'E', calories: 42, sugar: 10.6, votes: 15, dietary: 'vegan' },
 
   // Snacks
-  { id: 's1', name: 'Mixed Nuts',            category: 'snacks', unit: 'bag (1kg)',       emoji: '🥜', inStock: true  },
-  { id: 's2', name: 'Granola Bars',          category: 'snacks', unit: 'box (24 pcs)',   emoji: '🍫', inStock: true  },
-  { id: 's3', name: 'Dark Chocolate Bites',  category: 'snacks', unit: 'box (50 pcs)',   emoji: '🍫', inStock: true  },
-  { id: 's4', name: 'Rice Cakes',            category: 'snacks', unit: 'pack (12 pcs)',  emoji: '🍘', inStock: true  },
-  { id: 's5', name: 'Trail Mix',             category: 'snacks', unit: 'bag (500g)',     emoji: '🥜', inStock: true  },
-  { id: 's6', name: 'Popcorn (Sea Salt)',    category: 'snacks', unit: 'pack (12 bags)', emoji: '🍿', inStock: true  },
+  { id: 's1', name: 'Mixed Nuts',            category: 'snacks', unit: 'bag (1kg)',       emoji: '🥜', inStock: true, nutriScore: 'A', calories: 607, protein: 18.0, sugar: 4.0, fiber: 7.0, votes: 65, dietary: 'vegan' },
+  { id: 's2', name: 'Granola Bars',          category: 'snacks', unit: 'box (24 pcs)',   emoji: '🍫', inStock: true, nutriScore: 'C', calories: 450, sugar: 12.0, fiber: 4.0, votes: 42, dietary: 'vegetarian' },
+  { id: 's4', name: 'Rice Cakes',            category: 'snacks', unit: 'pack (12 pcs)',  emoji: '🍘', inStock: true, nutriScore: 'B', calories: 380, sugar: 1.0, fiber: 3.0, votes: 14, dietary: 'vegan' },
+  { id: 's5', name: 'Trail Mix',             category: 'snacks', unit: 'bag (500g)',     emoji: '🥜', inStock: true, nutriScore: 'B', calories: 480, protein: 12.0, sugar: 15.0, fiber: 5.0, votes: 28, dietary: 'vegan', allergens: ['Peanuts', 'Tree Nuts'] },
 
   // Fruits & Veg
-  { id: 'f1', name: 'Banana Box',            category: 'fruits', unit: 'box (≈40 pcs)',  emoji: '🍌', inStock: true  },
-  { id: 'f2', name: 'Apple Assortment',      category: 'fruits', unit: 'crate (≈30 pcs)', emoji: '🍏', inStock: true  },
-  { id: 'f3', name: 'Seasonal Fruit Bowl',   category: 'fruits', unit: 'bowl',           emoji: '🍇', inStock: true  },
-  { id: 'f4', name: 'Cherry Tomatoes',       category: 'fruits', unit: 'box (2kg)',      emoji: '🍅', inStock: true  },
-  { id: 'f5', name: 'Mixed Salad Leaves',    category: 'fruits', unit: 'bag (500g)',     emoji: '🥬', inStock: false },
+  { id: 'f1', name: 'Banana Box',            category: 'fruits', unit: 'box (≈40 pcs)',  emoji: '🍌', inStock: true, nutriScore: 'A', calories: 89, sugar: 12.0, fiber: 2.6, votes: 95, dietary: 'vegan' },
+  { id: 'f2', name: 'Apple Assortment',      category: 'fruits', unit: 'crate (≈30 pcs)', emoji: '🍏', inStock: true, nutriScore: 'A', calories: 52, sugar: 10.0, fiber: 2.4, votes: 72, dietary: 'vegan' },
+  { id: 'f3', name: 'Seasonal Fruit Bowl',   category: 'fruits', unit: 'bowl',           emoji: '🍇', inStock: true, nutriScore: 'A', votes: 88, dietary: 'vegan' },
+  { id: 'f4', name: 'Cherry Tomatoes',       category: 'fruits', unit: 'box (2kg)',      emoji: '🍅', inStock: true, nutriScore: 'A', calories: 18, fiber: 1.2, votes: 16, dietary: 'vegan' },
 
   // Essentials
-  { id: 'e1', name: 'Paper Towels',          category: 'essentials', unit: 'pack (6 rolls)',    emoji: '🧻', inStock: true  },
-  { id: 'e2', name: 'Napkins',               category: 'essentials', unit: 'pack (200 pcs)',    emoji: '🧻', inStock: true  },
-  { id: 'e3', name: 'Dish Soap',             category: 'essentials', unit: 'bottle (1L)',       emoji: '🧴', inStock: true  },
-  { id: 'e4', name: 'Hand Sanitiser',        category: 'essentials', unit: 'bottle (500ml)',    emoji: '🧴', inStock: true  },
-  { id: 'e5', name: 'Bin Bags (120L)',        category: 'essentials', unit: 'roll (25 bags)',    emoji: '🗑️', inStock: true  },
+  { id: 'e1', name: 'Paper Towels',          category: 'essentials', unit: 'pack (6 rolls)',    emoji: '🧻', inStock: true, votes: 20 },
+  { id: 'e3', name: 'Dish Soap',             category: 'essentials', unit: 'bottle (1L)',       emoji: '🧴', inStock: true, votes: 8  },
   { id: 'e6', name: 'Cling Film',            category: 'essentials', unit: 'roll',              emoji: '📦', inStock: true  },
 ];
 
