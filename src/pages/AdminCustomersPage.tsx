@@ -293,21 +293,43 @@ export default function AdminCustomersPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-black text-surface-400 uppercase tracking-widest mb-2">Pantry Service Tier</label>
-                <div className="grid grid-cols-3 gap-3">
+                <label className="block text-[11px] font-black text-surface-400 uppercase tracking-widest mb-3">Pantry Service Tier</label>
+                <div className="grid grid-cols-3 gap-4">
                   {(['basic', 'premium', 'enterprise'] as const).map(t => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setNewCust({...newCust, tier: t})}
-                      className={`py-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-1 ${
-                        newCust.tier === t ? 'border-brand-900 bg-brand-50 text-brand-900 shadow-sm' : 'border-surface-100 text-surface-400 opacity-60 hover:opacity-100'
+                      className={`relative p-5 rounded-3xl border-2 text-left transition-all duration-300 ${
+                        newCust.tier === t 
+                          ? 'border-brand-900 bg-brand-50/50 text-brand-900 shadow-panel-hover ring-4 ring-brand-900/5' 
+                          : 'border-surface-100 text-surface-400 hover:border-surface-200 bg-white'
                       }`}
                     >
-                      <span className="text-xs font-black uppercase tracking-widest">{t}</span>
-                      <span className="text-[10px] font-bold opacity-70">
-                        {t === 'basic' ? 'Standard' : t === 'premium' ? 'Express' : 'Dedicated'}
-                      </span>
+                      {newCust.tier === t && (
+                        <div className="absolute -top-1.5 -right-1.5 bg-brand-900 text-white rounded-full p-1 shadow-lg">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+                      <span className="block text-xs font-black uppercase tracking-widest mb-1">{t}</span>
+                      <p className="text-[10px] font-bold opacity-70 mb-3 leading-tight">
+                        {t === 'basic' ? 'Standard Delivery' : t === 'premium' ? 'Express + Specific Time' : 'Dedicated Support & Logistics'}
+                      </p>
+                      <ul className="space-y-1">
+                        <li className={`text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 ${newCust.tier === t ? 'opacity-100' : 'opacity-40'}`}>
+                          <div className={`w-1 h-1 rounded-full ${newCust.tier === t ? 'bg-brand-900' : 'bg-surface-400'}`} /> Weekly Refill
+                        </li>
+                        {t !== 'basic' && (
+                          <li className={`text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 ${newCust.tier === t ? 'opacity-100' : 'opacity-40'}`}>
+                             <div className={`w-1 h-1 rounded-full ${newCust.tier === t ? 'bg-brand-900' : 'bg-surface-400'}`} /> Priority Slots
+                          </li>
+                        )}
+                        {t === 'enterprise' && (
+                          <li className={`text-[8px] font-black uppercase tracking-tighter flex items-center gap-1 ${newCust.tier === t ? 'opacity-100' : 'opacity-40'}`}>
+                             <div className={`w-1 h-1 rounded-full ${newCust.tier === t ? 'bg-brand-900' : 'bg-surface-400'}`} /> Custom Items
+                          </li>
+                        )}
+                      </ul>
                     </button>
                   ))}
                 </div>
