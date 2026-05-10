@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { Category, PantryItem } from '../types';
+import type { Category } from '../types';
 import { useOrders } from '../context/OrderContext';
 import CategoryTabs from '../components/CategoryTabs';
 import ItemCard from '../components/ItemCard';
