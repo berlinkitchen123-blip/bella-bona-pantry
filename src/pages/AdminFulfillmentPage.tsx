@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useOrders } from '../context/OrderContext';
-import { PackageOpen, Thermometer, ShieldCheck, MapPin, CalendarClock, MessageSquare, Bell, CreditCard, Truck, AlertTriangle, CheckCircle } from 'lucide-react';
+import { PackageOpen, ShieldCheck, MapPin, CalendarClock, MessageSquare, Bell, CreditCard, Truck, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { CartEntry } from '../types';
 
 export default function AdminFulfillmentPage() {
