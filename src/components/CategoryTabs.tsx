@@ -15,7 +15,7 @@ export default function CategoryTabs({ active, onChange, itemCounts }: Props) {
         onClick={() => onChange('all')}
         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200
           ${active === 'all'
-            ? 'bg-surface-900 text-white shadow-md'
+            ? 'bg-brand-900 text-white shadow-md'
             : 'bg-white text-surface-600 hover:bg-surface-50 border border-surface-200'
           }`}
       >
@@ -32,7 +32,7 @@ export default function CategoryTabs({ active, onChange, itemCounts }: Props) {
           onClick={() => onChange(cat.key as Category)}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200
             ${active === cat.key
-              ? 'bg-surface-900 text-white shadow-md'
+              ? 'bg-brand-900 text-white shadow-md'
               : 'bg-white text-surface-600 hover:bg-surface-50 border border-surface-200'
             }`}
         >
