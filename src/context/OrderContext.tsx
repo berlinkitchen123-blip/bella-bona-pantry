@@ -3,6 +3,8 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import type { Order, CartEntry, DeliveryOption, PantryItem, Promotion, AdminNotification } from '../types';
 import { DEMO_ORDERS } from '../data/mockData';
 import { PANTRY_ITEMS } from '../data/mockData';
+import { ref, onValue, set, update } from 'firebase/database';
+import { db } from '../firebase';
 
 interface OrderContextType {
   orders: Order[];
@@ -21,15 +23,19 @@ interface OrderContextType {
   notifications: AdminNotification[];
   markNotificationRead: (id: string) => void;
 
-  // New: Notion Sync
+  // Notion Sync
   syncToNotion: (orderId: string) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextType | null>(null);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
-  const [orders, setOrders] = useState<Order[]>(DEMO_ORDERS.map(o => ({ ...o, notionSyncStatus: 'synced' })));
-  
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [catalog, setCatalog] = useState<PantryItem[]>([]);
+  const [stockCounts, setStockCounts] = useState<Record<string, number>>({});
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+
   const initialItems = [...PANTRY_ITEMS].map(i => {
     const base = { ...i, stockCount: (i.inStock ? 50 : 0) + (Math.floor(Math.random() * 20)), bestBefore: '2026-06-25' };
     if(base.category === 'dairy') return { ...base, dietary: 'lactose-free', allergens: ['Certified Lactose Free'] } as PantryItem;
@@ -37,19 +43,92 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     return base;
   });
 
-  const [catalog, setCatalog] = useState<PantryItem[]>(initialItems);
-  const [stockCounts, setStockCounts] = useState<Record<string, number>>(() => {
-    const map: Record<string, number> = {};
-    initialItems.forEach(item => { map[item.id] = item.stockCount ?? 0; });
-    return map;
-  });
+  // Listen to Firebase RTDB changes and seed if empty
+  useEffect(() => {
+    // 1. Catalog
+    const catalogRef = ref(db, 'catalog');
+    const unsubscribeCatalog = onValue(catalogRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const items = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+        setCatalog(items as PantryItem[]);
+      } else {
+        const seedCatalog: Record<string, PantryItem> = {};
+        initialItems.forEach(item => { seedCatalog[item.id] = item; });
+        set(catalogRef, seedCatalog);
+      }
+    });
 
-  const [promotions, setPromotions] = useState<Promotion[]>([
-    { id: 'p1', title: 'Summer Refresh Festival', subtitle: '30% Off All Cold Drinks', type: 'festival', active: true, color: '#004729', emoji: '☀️' },
-    { id: 'p2', title: 'Fruit Week', subtitle: 'Free delivery on all local fruit boxes', type: 'seasonal', active: false, color: '#f59e0b', emoji: '🍎' }
-  ]);
+    // 2. Orders
+    const ordersRef = ref(db, 'orders');
+    const unsubscribeOrders = onValue(ordersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const items = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+        // Sort orders placedAt descending
+        const sorted = (items as Order[]).sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
+        setOrders(sorted);
+      } else {
+        const seedOrders: Record<string, Order> = {};
+        DEMO_ORDERS.forEach(o => {
+          seedOrders[o.id] = { ...o, notionSyncStatus: 'synced' as const };
+        });
+        set(ordersRef, seedOrders);
+      }
+    });
 
-  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+    // 3. Stock Counts
+    const stockCountsRef = ref(db, 'stockCounts');
+    const unsubscribeStock = onValue(stockCountsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setStockCounts(data);
+      } else {
+        const map: Record<string, number> = {};
+        initialItems.forEach(item => { map[item.id] = item.stockCount ?? 0; });
+        set(stockCountsRef, map);
+      }
+    });
+
+    // 4. Promotions
+    const promotionsRef = ref(db, 'promotions');
+    const unsubscribePromotions = onValue(promotionsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const items = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+        setPromotions(items as Promotion[]);
+      } else {
+        const seedPromotions: Record<string, Promotion> = {};
+        const defaultPromotions: Promotion[] = [
+          { id: 'p1', title: 'Summer Refresh Festival', subtitle: '30% Off All Cold Drinks', type: 'festival', active: true, color: '#004729', emoji: '☀️' },
+          { id: 'p2', title: 'Fruit Week', subtitle: 'Free delivery on all local fruit boxes', type: 'seasonal', active: false, color: '#f59e0b', emoji: '🍎' }
+        ];
+        defaultPromotions.forEach(p => { seedPromotions[p.id] = p; });
+        set(promotionsRef, seedPromotions);
+      }
+    });
+
+    // 5. Notifications
+    const notificationsRef = ref(db, 'notifications');
+    const unsubscribeNotifications = onValue(notificationsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const items = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+        const sorted = (items as AdminNotification[]).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setNotifications(sorted);
+      } else {
+        setNotifications([]);
+      }
+    });
+
+    return () => {
+      unsubscribeCatalog();
+      unsubscribeOrders();
+      unsubscribeStock();
+      unsubscribePromotions();
+      unsubscribeNotifications();
+    };
+  }, []);
 
   // Simulation: Automated Restock Alerts
   useEffect(() => {
@@ -63,21 +142,21 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         status: 'unread',
         timestamp: new Date().toISOString()
       };
-      setNotifications(prev => {
-         if (prev.some(p => p.title === newNotif.title)) return prev;
-         return [newNotif, ...prev.slice(0, 9)];
-      });
+      // Check if alert already exists in active notifications
+      if (!notifications.some(p => p.title === newNotif.title)) {
+        set(ref(db, `notifications/${newNotif.id}`), newNotif);
+      }
     }
-  }, [stockCounts, catalog]);
+  }, [stockCounts, catalog, notifications]);
 
-  // Point: Notion Sync Simulation
+  // Notion Sync
   const syncToNotion = useCallback(async (orderId: string) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, notionSyncStatus: 'pending' } : o));
+    update(ref(db, `orders/${orderId}`), { notionSyncStatus: 'pending' });
     
     // Simulate API Call to Notion Webhook
     await new Promise(r => setTimeout(r, 2000));
     
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, notionSyncStatus: 'synced' } : o));
+    update(ref(db, `orders/${orderId}`), { notionSyncStatus: 'synced' });
     
     const notionNotif: AdminNotification = {
       id: `notion-${Date.now()}`,
@@ -87,29 +166,32 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       status: 'unread',
       timestamp: new Date().toISOString()
     };
-    setNotifications(prev => [notionNotif, ...prev]);
+    set(ref(db, `notifications/${notionNotif.id}`), notionNotif);
   }, []);
 
   const addCatalogItem = useCallback((item: PantryItem) => {
-    setCatalog(prev => [item, ...prev]);
-    setStockCounts(prev => ({ ...prev, [item.id]: item.stockCount ?? 0 }));
+    set(ref(db, `catalog/${item.id}`), item);
+    set(ref(db, `stockCounts/${item.id}`), item.stockCount ?? 0);
   }, []);
 
   const removeCatalogItem = useCallback((itemId: string) => {
-    setCatalog(prev => prev.filter(i => i.id !== itemId));
-    setStockCounts(prev => {
-      const { [itemId]: _, ...rest } = prev;
-      return rest;
-    });
+    set(ref(db, `catalog/${itemId}`), null);
+    set(ref(db, `stockCounts/${itemId}`), null);
   }, []);
 
   const updateStockCount = useCallback((itemId: string, count: number) => {
-    setStockCounts(prev => ({ ...prev, [itemId]: Math.max(0, count) }));
+    set(ref(db, `stockCounts/${itemId}`), Math.max(0, count));
   }, []);
 
   const placeOrder = useCallback((items: CartEntry[], deliveryType: DeliveryOption, deliveryDate: string, deliveryTimeWindow: string, surcharge: number, companyName: string, companyEmail: string, companyAddress: string, customRequests: string): Order => {
+    const nextNum = Math.max(...orders.map(o => {
+      const match = o.id.match(/ORD-2026-(\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    }), 43) + 1;
+    const orderId = `ORD-2026-${String(nextNum).padStart(4, '0')}`;
+    
     const order: Order = {
-      id: `ORD-2026-${String(orders.length + 44).padStart(4, '0')}`,
+      id: orderId,
       items,
       deliveryType,
       deliveryDate,
@@ -123,7 +205,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       customRequests: customRequests || undefined,
       notionSyncStatus: 'pending'
     };
-    setOrders(prev => [order, ...prev]);
+    
+    set(ref(db, `orders/${order.id}`), order);
     
     // Auto-trigger Notion Sync
     setTimeout(() => syncToNotion(order.id), 500);
@@ -136,44 +219,49 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       status: 'unread',
       timestamp: new Date().toISOString()
     };
-    setNotifications(prev => [logisticsNotif, ...prev]);
+    set(ref(db, `notifications/${logisticsNotif.id}`), logisticsNotif);
 
     return order;
-  }, [orders.length, syncToNotion]);
+  }, [orders, syncToNotion]);
 
   const updateOrderStatus = useCallback((orderId: string, status: Order['status']) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    update(ref(db, `orders/${orderId}`), { status });
     
     // Sync status change to Notion
     syncToNotion(orderId);
 
     if (status === 'delivered') {
+      const order = orders.find(o => o.id === orderId);
+      const companyName = order?.companyName || 'Customer';
       const financeNotif: AdminNotification = {
         id: `fin-${Date.now()}`,
         type: 'finance',
         title: 'Invoice Generation Pending',
-        message: `Order ${orderId} has been delivered. Please generate invoice for ${orders.find(o => o.id === orderId)?.companyName}.`,
+        message: `Order ${orderId} has been delivered. Please generate invoice for ${companyName}.`,
         status: 'unread',
         timestamp: new Date().toISOString()
       };
-      setNotifications(prev => [financeNotif, ...prev]);
+      set(ref(db, `notifications/${financeNotif.id}`), financeNotif);
     }
   }, [orders, syncToNotion]);
 
   const toggleHaccp = useCallback((orderId: string) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, haccpChecked: !o.haccpChecked } : o));
-  }, []);
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      update(ref(db, `orders/${orderId}`), { haccpChecked: !order.haccpChecked });
+    }
+  }, [orders]);
 
   const setInvoiceTotal = useCallback((orderId: string, total: number) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, invoiceTotal: total, status: 'invoiced' as const } : o));
+    update(ref(db, `orders/${orderId}`), { invoiceTotal: total, status: 'invoiced' as const });
   }, []);
 
   const updatePromotion = useCallback((id: string, active: boolean) => {
-    setPromotions(prev => prev.map(p => p.id === id ? { ...p, active } : p));
+    update(ref(db, `promotions/${id}`), { active });
   }, []);
 
   const markNotificationRead = useCallback((id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, status: 'read' as const } : n));
+    update(ref(db, `notifications/${id}`), { status: 'read' as const });
   }, []);
 
   return (
