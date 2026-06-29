@@ -19,6 +19,7 @@ export interface PantryItem {
   sugar?: number;
   fiber?: number;
   votes?: number;
+  imageUrl?: string;  // fetched by fetch_images.js from Firebase
 }
 
 export interface Promotion {

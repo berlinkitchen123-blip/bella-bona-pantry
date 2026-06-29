@@ -3,7 +3,7 @@ import { getDatabase } from "firebase/database";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCZJUrbaPd06YVm4xD2iOVD89-M_rl7Ylk",
+  apiKey: "AIzaSyAGoSEWebkSJcbzAFHDV0O0ZdyLyHHqhb8",
   authDomain: "bellabona-pantry.firebaseapp.com",
   databaseURL: "https://bellabona-pantry-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "bellabona-pantry",

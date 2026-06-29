@@ -54,9 +54,17 @@ export default function ItemCard({ item, stockCount }: Props) {
           className="relative h-32 flex items-center justify-center transition-all duration-700 bg-surface-50"
           style={{ backgroundColor: inStock ? `${bgColor}15` : '#f5f5f5' }}
         >
-          <span className="text-6xl filter drop-shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-700 ease-out">
-            {item.emoji}
-          </span>
+          {item.imageUrl ? (
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="w-full h-full object-cover rounded-2xl"
+            />
+          ) : (
+            <span className="text-6xl filter drop-shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-700 ease-out">
+              {item.emoji}
+            </span>
+          )}
 
           {quantity > 0 && (
             <div className="absolute -bottom-3 right-4 h-7 px-3 bg-brand-900 text-white text-[10px] font-black rounded-xl flex items-center justify-center shadow-lg animate-bounce-in border-2 border-white">
