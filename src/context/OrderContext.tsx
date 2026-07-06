@@ -69,11 +69,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         const sorted = (items as Order[]).sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
         setOrders(sorted);
       } else {
-        const seedOrders: Record<string, Order> = {};
-        DEMO_ORDERS.forEach(o => {
-          seedOrders[o.id] = { ...o, notionSyncStatus: 'synced' as const };
-        });
-        set(ordersRef, seedOrders);
+                  // No seeding — start with empty orders
+                            setOrders([]);
+      }
       }
     });
 
