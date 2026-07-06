@@ -199,10 +199,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       surcharge,
       placedAt: new Date().toISOString(),
       status: 'pending',
-      companyName,
-      companyEmail,
-      companyAddress,
-      customRequests: customRequests || undefined,
+    companyName: companyName || '',
+        companyEmail: companyEmail || '',
+            companyAddress: companyAddress || '',
+                customRequests: customRequests || '',
       notionSyncStatus: 'pending'
     };
     
