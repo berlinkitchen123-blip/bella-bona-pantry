@@ -35,7 +35,7 @@ export default function CartSidebar({ onOrderPlaced }: Props) {
       cart, 
       deliveryType, 
       deliveryDate,
-      deliveryTimeWindow,
+      deliveryTimeWindow || '',
       surcharge, 
       user.company, 
       user.email,
