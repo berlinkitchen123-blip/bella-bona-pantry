@@ -195,7 +195,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       items,
       deliveryType,
       deliveryDate,
-      deliveryTimeWindow: deliveryType === 'specific_time' ? deliveryTimeWindow : undefined,
+      deliveryTimeWindow: deliveryType === 'specific_time' ? deliveryTimeWindow : '',
       surcharge,
       placedAt: new Date().toISOString(),
       status: 'pending',
