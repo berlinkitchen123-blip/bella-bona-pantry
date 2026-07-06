@@ -192,7 +192,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     
     const order: Order = {
       id: orderId,
-      items,
+          items: items.map(e => ({ ...e, item: e.item ? { ...e.item, imageBase64: '' } : e.item })),
       deliveryType,
       deliveryDate,
       deliveryTimeWindow: deliveryType === 'specific_time' ? deliveryTimeWindow : '',
