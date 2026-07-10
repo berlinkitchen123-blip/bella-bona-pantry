@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { Order, CartEntry, DeliveryOption, PantryItem, Promotion, AdminNotification } from '../types';
-import { DEMO_ORDERS } from '../data/mockData';
 import { PANTRY_ITEMS } from '../data/mockData';
 import { ref, onValue, set, update } from 'firebase/database';
 import { db } from '../firebase';
@@ -69,9 +68,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         const sorted = (items as Order[]).sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
         setOrders(sorted);
       } else {
-                  // No seeding — start with empty orders
-                            setOrders([]);
-      }
+        // No seeding — start with empty orders
+        setOrders([]);
       }
     });
 
