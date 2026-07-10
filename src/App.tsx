@@ -9,6 +9,7 @@ import CartSidebar from './components/CartSidebar';
 import AIChatbot from './components/AIChatbot';
 
 import LoginPage from './pages/LoginPage';
+import CompleteProfilePage from './pages/CompleteProfilePage';
 import CatalogPage from './pages/CatalogPage';
 import CustomerOrdersPage from './pages/CustomerOrdersPage';
 import AdminFulfillmentPage from './pages/AdminFulfillmentPage';
@@ -21,12 +22,28 @@ function ProtectedRoute({ children, reqAdmin = false }: { children: ReactNode, r
   const { user, isAdmin } = useAuth();
   if (!user) return <Navigate to="/" replace />;
   if (reqAdmin && !isAdmin) return <Navigate to="/catalog" replace />;
+  if (!reqAdmin && !isAdmin && !user.company) return <Navigate to="/complete-profile" replace />;
   return children;
+}
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-surface-50">
+      <svg className="w-8 h-8 animate-spin text-brand-900" viewBox="0 0 24 24" fill="none">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+      </svg>
+    </div>
+  );
 }
 
 // Sub-app with hooks loaded
 function AppRoutes() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
+
+  if (loading) return <LoadingScreen />;
+
+  const homeRedirect = isAdmin ? 'admin/fulfillment' : (user?.company ? 'catalog' : 'complete-profile');
 
   return (
     <>
@@ -40,9 +57,10 @@ function AppRoutes() {
 
       <main className={user ? "bg-surface-50 min-h-[calc(100vh-64px)]" : ""}>
         <Routes>
-          <Route path="/" element={user ? <Navigate to={isAdmin ? "admin/fulfillment" : "catalog"} replace /> : <LoginPage />} />
+          <Route path="/" element={user ? <Navigate to={homeRedirect} replace /> : <LoginPage />} />
 
           {/* Customer */}
+          <Route path="complete-profile" element={user ? <CompleteProfilePage /> : <Navigate to="/" replace />} />
           <Route path="catalog" element={<ProtectedRoute><CatalogPage /></ProtectedRoute>} />
           <Route path="orders" element={<ProtectedRoute><CustomerOrdersPage /></ProtectedRoute>} />
 

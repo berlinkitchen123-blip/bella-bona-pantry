@@ -68,6 +68,7 @@ export interface Order {
 }
 
 export interface User {
+  uid: string;
   email: string;
   name: string;
   company: string;

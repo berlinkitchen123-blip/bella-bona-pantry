@@ -1,43 +1,133 @@
 import type { ReactNode } from 'react';
-import { createContext, useContext, useState } from 'react';
-import type {  User  } from '../types';
+import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+} from 'firebase/auth';
+import { ref, onValue, set } from 'firebase/database';
+import { auth, googleProvider, db } from '../firebase';
+import type { User } from '../types';
+
+const ADMIN_EMAIL = 'berlinkitchen123@gmail.com';
+
+interface ProfileDetails {
+  name: string;
+  company: string;
+  companyAddress: string;
+}
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
+  loading: boolean;
   isAdmin: boolean;
+  signupWithEmail: (email: string, password: string, details: ProfileDetails) => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  completeProfile: (details: ProfileDetails) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function roleForEmail(email: string): 'admin' | 'customer' {
+  return email.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'customer';
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (email: string, _password: string): boolean => {
-    // Domain-based filtering: @bellabona.com → admin, anything else → customer
-    const isAdmin = email.toLowerCase().endsWith('@bellabona.com');
-    const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  useEffect(() => {
+    let unsubscribeProfile: (() => void) | null = null;
 
-    setUser({
-      email,
-      name,
-      company: isAdmin ? 'Bella & Bona' : deriveCompany(email),
-      companyAddress: isAdmin ? 'HQ Address' : '123 Business Rd, Berlin',
-      role: isAdmin ? 'admin' : 'customer',
+    const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = null;
+      }
+
+      if (!fbUser) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      const profileRef = ref(db, `users/${fbUser.uid}`);
+      unsubscribeProfile = onValue(profileRef, (snapshot) => {
+        const profile = snapshot.val();
+        const role = roleForEmail(fbUser.email || '');
+
+        if (!profile) {
+          // First sign-in via Google — seed a minimal profile; company info collected on Complete Profile page.
+          const seeded: User = {
+            uid: fbUser.uid,
+            email: fbUser.email || '',
+            name: fbUser.displayName || (fbUser.email || '').split('@')[0],
+            company: '',
+            companyAddress: '',
+            role,
+          };
+          set(profileRef, seeded);
+          setUser(seeded);
+        } else {
+          setUser({ ...profile, uid: fbUser.uid, email: fbUser.email || profile.email, role } as User);
+        }
+        setLoading(false);
+      });
     });
-    return true;
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
+  }, []);
+
+  const signupWithEmail = async (email: string, password: string, details: ProfileDetails) => {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const profile: User = {
+      uid: cred.user.uid,
+      email,
+      name: details.name,
+      company: details.company,
+      companyAddress: details.companyAddress,
+      role: roleForEmail(email),
+    };
+    await set(ref(db, `users/${cred.user.uid}`), profile);
   };
 
-  const logout = () => setUser(null);
+  const loginWithEmail = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  };
 
-  const deriveCompany = (email: string): string => {
-    const domain = email.split('@')[1]?.split('.')[0] || 'Company';
-    return domain.charAt(0).toUpperCase() + domain.slice(1) + ' GmbH';
+  const loginWithGoogle = async () => {
+    await signInWithPopup(auth, googleProvider);
+  };
+
+  const completeProfile = async (details: ProfileDetails) => {
+    if (!user) throw new Error('Not signed in.');
+    await set(ref(db, `users/${user.uid}`), { ...user, ...details });
+  };
+
+  const logout = async () => {
+    await firebaseSignOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isAdmin: user?.role === 'admin',
+        signupWithEmail,
+        loginWithEmail,
+        loginWithGoogle,
+        completeProfile,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
