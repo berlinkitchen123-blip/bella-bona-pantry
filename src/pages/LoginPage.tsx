@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, ArrowRight, Eye, EyeOff, User as UserIcon, Building2, MapPin } from 'lucide-react';
 
 function friendlyAuthError(err: unknown): string {
-  const code = (err as { code?: string })?.code || '';
+  const code = (err as { code?: string })?.code || (err as { message?: string })?.message || '';
   switch (code) {
     case 'auth/email-already-in-use':
       return 'An account with this email already exists. Try signing in instead.';
@@ -18,6 +18,10 @@ function friendlyAuthError(err: unknown): string {
       return 'No account found with this email. Try creating one instead.';
     case 'auth/popup-closed-by-user':
       return 'Google sign-in was cancelled.';
+    case 'auth/popup-blocked':
+      return 'Your browser blocked the Google sign-in popup. Please allow popups for this site and try again.';
+    case 'auth/popup-timeout':
+      return 'Google sign-in took too long to respond. Please try again.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Please wait a moment and try again.';
     default:

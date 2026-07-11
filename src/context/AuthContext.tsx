@@ -10,8 +10,10 @@ import {
 import { ref, onValue, set } from 'firebase/database';
 import { auth, googleProvider, db } from '../firebase';
 import type { User } from '../types';
+import { readCache, writeCache, clearCache } from '../lib/localCache';
 
 const ADMIN_EMAIL = 'berlinkitchen123@gmail.com';
+const CACHE_KEY = 'authUser';
 
 interface ProfileDetails {
   name: string;
@@ -37,8 +39,12 @@ function roleForEmail(email: string): 'admin' | 'customer' {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Lazy-init from the last known profile so a returning session renders the
+  // app immediately instead of sitting on a blocking spinner while Firebase
+  // re-confirms the session and re-fetches the profile over the network.
+  const cachedUser = readCache<User>(CACHE_KEY);
+  const [user, setUser] = useState<User | null>(cachedUser);
+  const [loading, setLoading] = useState(!cachedUser);
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
@@ -52,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!fbUser) {
         setUser(null);
         setLoading(false);
+        clearCache(CACHE_KEY);
         return;
       }
 
@@ -59,10 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       unsubscribeProfile = onValue(profileRef, (snapshot) => {
         const profile = snapshot.val();
         const role = roleForEmail(fbUser.email || '');
+        let resolved: User;
 
         if (!profile) {
           // First sign-in via Google — seed a minimal profile; company info collected on Complete Profile page.
-          const seeded: User = {
+          resolved = {
             uid: fbUser.uid,
             email: fbUser.email || '',
             name: fbUser.displayName || (fbUser.email || '').split('@')[0],
@@ -70,11 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             companyAddress: '',
             role,
           };
-          set(profileRef, seeded);
-          setUser(seeded);
+          set(profileRef, resolved);
         } else {
-          setUser({ ...profile, uid: fbUser.uid, email: fbUser.email || profile.email, role } as User);
+          resolved = { ...profile, uid: fbUser.uid, email: fbUser.email || profile.email, role } as User;
         }
+        writeCache(CACHE_KEY, resolved);
+        setUser(resolved);
         setLoading(false);
       });
     });
@@ -103,7 +112,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGoogle = async () => {
-    await signInWithPopup(auth, googleProvider);
+    // signInWithPopup can hang indefinitely if the popup's completion signal is
+    // lost (browser popup blockers, third-party cookie restrictions, COOP
+    // interactions between the opener and accounts.google.com) — it neither
+    // resolves nor rejects, so the "Connecting…" button never recovers on its
+    // own. Race it against a timeout so the user always gets a clear error.
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('auth/popup-timeout')), 20000)
+    );
+    await Promise.race([signInWithPopup(auth, googleProvider), timeout]);
   };
 
   const completeProfile = async (details: ProfileDetails) => {
@@ -112,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    clearCache(CACHE_KEY);
     await firebaseSignOut(auth);
   };
 

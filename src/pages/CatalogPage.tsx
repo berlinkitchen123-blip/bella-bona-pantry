@@ -43,8 +43,8 @@ export default function CatalogPage() {
     const veganCount = catalog.filter(i => i.dietary === 'vegan').length;
     const avgNutri = catalog.filter(i => i.nutriScore === 'A' || i.nutriScore === 'B').length;
     return {
-      wellnessScore: Math.round((avgNutri / catalog.length) * 100),
-      plantBased: Math.round((veganCount / catalog.length) * 100)
+      wellnessScore: catalog.length ? Math.round((avgNutri / catalog.length) * 100) : 0,
+      plantBased: catalog.length ? Math.round((veganCount / catalog.length) * 100) : 0
     };
   }, [catalog]);
 

@@ -3,6 +3,7 @@ import type { PantryItem } from '../types';
 import { useCart } from '../context/CartContext';
 import { Minus, Plus, AlertCircle, Info, ThumbsUp, X, Activity, Leaf, Heart, Wheat, Droplets, Calendar } from 'lucide-react';
 import { CATEGORIES } from '../data/mockData';
+import { thumbnailUrl } from '../lib/imageProxy';
 
 interface Props {
   item: PantryItem;
@@ -56,8 +57,12 @@ export default function ItemCard({ item, stockCount }: Props) {
         >
           {item.imageUrl ? (
             <img
-              src={item.imageUrl}
+              src={thumbnailUrl(item.imageUrl)}
               alt={item.name}
+              loading="lazy"
+              decoding="async"
+              width={128}
+              height={128}
               className="w-full h-full object-cover rounded-2xl"
             />
           ) : (

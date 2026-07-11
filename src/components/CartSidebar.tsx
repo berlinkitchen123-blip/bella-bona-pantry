@@ -11,18 +11,18 @@ interface Props {
 
 export default function CartSidebar({ onOrderPlaced }: Props) {
   const { user } = useAuth();
-  const { 
-    cart, 
+  const {
+    cart,
     addItem, removeItem, clearCart, totalItems,
     deliveryType, setDeliveryType,
     deliveryDate, setDeliveryDate,
     deliveryTimeWindow, setDeliveryTimeWindow,
     surcharge,
-    customRequests, setCustomRequests
+    customRequests, setCustomRequests,
+    isCartOpen: isOpen, openCart, closeCart,
   } = useCart();
-  
+
   const { placeOrder } = useOrders();
-  const [isOpen, setIsOpen] = useState(false);
   const [notes, setNotes] = useState(''); // Just standard order notes
   
   const totalQty = cart.reduce((sum, e) => sum + e.quantity, 0);
@@ -46,7 +46,7 @@ export default function CartSidebar({ onOrderPlaced }: Props) {
     
     clearCart();
     setNotes('');
-    setIsOpen(false);
+    closeCart();
     onOrderPlaced(order.id);
   };
 
@@ -56,7 +56,7 @@ export default function CartSidebar({ onOrderPlaced }: Props) {
       {totalItems > 0 && (
         <div className="fixed bottom-6 right-6 z-40 animate-slide-up">
           <button
-            onClick={() => setIsOpen(true)}
+            onClick={openCart}
             id="open-cart"
             className="flex items-center gap-3 px-5 py-3.5 bg-surface-900 text-white rounded-2xl shadow-xl hover:bg-surface-800 active:scale-95 transition-all duration-200"
           >
@@ -72,8 +72,9 @@ export default function CartSidebar({ onOrderPlaced }: Props) {
       {/* Backdrop */}
       {isOpen && (
         <div
+          id="cart-backdrop"
           className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity"
-          onClick={() => setIsOpen(false)}
+          onClick={closeCart}
         />
       )}
 
@@ -85,7 +86,7 @@ export default function CartSidebar({ onOrderPlaced }: Props) {
             <h2 className="font-bold text-lg text-surface-900">Your Order</h2>
             <p className="text-xs text-surface-500">{user?.company} • {user?.companyAddress}</p>
           </div>
-          <button onClick={() => setIsOpen(false)} className="p-2 rounded-xl hover:bg-surface-200 transition-colors">
+          <button id="close-cart" onClick={closeCart} className="p-2 rounded-xl hover:bg-surface-200 transition-colors">
             <X className="w-5 h-5 text-surface-500" />
           </button>
         </div>

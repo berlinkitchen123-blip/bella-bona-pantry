@@ -5,7 +5,7 @@ import { ShoppingCart, ClipboardList, LogOut, Package, Building2, Lock } from 'l
 
 export default function Header() {
   const { user, logout, isAdmin } = useAuth();
-  const { totalItems } = useCart();
+  const { totalItems, openCart } = useCart();
   const location = useLocation();
 
   if (!user) return null;
@@ -99,9 +99,12 @@ export default function Header() {
           <div className="flex items-center gap-4">
             {/* Cart badge (customer only) */}
             {!isAdmin && (
-              <Link
-                to="catalog"
+              <button
+                type="button"
+                id="header-cart-button"
+                onClick={openCart}
                 className="relative p-2.5 rounded-2xl bg-surface-50 hover:bg-brand-50 hover:text-brand-700 transition-all active:scale-95"
+                title="View cart"
               >
                 <ShoppingCart className="w-5 h-5" />
                 {totalItems > 0 && (
@@ -109,7 +112,7 @@ export default function Header() {
                     {totalItems}
                   </span>
                 )}
-              </Link>
+              </button>
             )}
 
             {/* SSL Lock */}

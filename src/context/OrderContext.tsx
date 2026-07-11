@@ -4,6 +4,8 @@ import type { Order, CartEntry, DeliveryOption, PantryItem, Promotion, AdminNoti
 import { PANTRY_ITEMS } from '../data/mockData';
 import { ref, onValue, set, update } from 'firebase/database';
 import { db } from '../firebase';
+import { useAuth } from './AuthContext';
+import { readCache, writeCache } from '../lib/localCache';
 
 interface OrderContextType {
   orders: Order[];
@@ -29,11 +31,15 @@ interface OrderContextType {
 const OrderContext = createContext<OrderContextType | null>(null);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [catalog, setCatalog] = useState<PantryItem[]>([]);
-  const [stockCounts, setStockCounts] = useState<Record<string, number>>({});
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
-  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const { user } = useAuth();
+
+  // Lazy-init from localStorage so the UI paints instantly on reload instead of
+  // waiting on a fresh network round-trip; Firebase then streams in live updates.
+  const [orders, setOrders] = useState<Order[]>(() => readCache<Order[]>('orders') ?? []);
+  const [catalog, setCatalog] = useState<PantryItem[]>(() => readCache<PantryItem[]>('catalog') ?? []);
+  const [stockCounts, setStockCounts] = useState<Record<string, number>>(() => readCache<Record<string, number>>('stockCounts') ?? {});
+  const [promotions, setPromotions] = useState<Promotion[]>(() => readCache<Promotion[]>('promotions') ?? []);
+  const [notifications, setNotifications] = useState<AdminNotification[]>(() => readCache<AdminNotification[]>('notifications') ?? []);
 
   const initialItems = [...PANTRY_ITEMS].map(i => {
     const base = { ...i, stockCount: (i.inStock ? 50 : 0) + (Math.floor(Math.random() * 20)), bestBefore: '2026-06-25' };
@@ -42,15 +48,22 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     return base;
   });
 
-  // Listen to Firebase RTDB changes and seed if empty
+  // Listen to Firebase RTDB changes and seed if empty.
+  // Gated on `user`: the DB rules require auth, and a listener that gets
+  // permission-denied while logged out never retries on its own once a user
+  // signs in — it has to be attached fresh, which is what this dependency does.
+  const uid = user?.uid;
   useEffect(() => {
+    if (!uid) return;
+
     // 1. Catalog
     const catalogRef = ref(db, 'catalog');
     const unsubscribeCatalog = onValue(catalogRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const items = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
-        setCatalog(items as PantryItem[]);
+        const items = (Array.isArray(data) ? data.filter(Boolean) : Object.values(data)) as PantryItem[];
+        writeCache('catalog', items);
+        setCatalog(items);
       } else {
         const seedCatalog: Record<string, PantryItem> = {};
         initialItems.forEach(item => { seedCatalog[item.id] = item; });
@@ -66,9 +79,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         const items = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
         // Sort orders placedAt descending
         const sorted = (items as Order[]).sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
+        writeCache('orders', sorted);
         setOrders(sorted);
       } else {
         // No seeding — start with empty orders
+        writeCache('orders', []);
         setOrders([]);
       }
     });
@@ -78,6 +93,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const unsubscribeStock = onValue(stockCountsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
+        writeCache('stockCounts', data);
         setStockCounts(data);
       } else {
         const map: Record<string, number> = {};
@@ -92,6 +108,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       const data = snapshot.val();
       if (data) {
         const items = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
+        writeCache('promotions', items);
         setPromotions(items as Promotion[]);
       } else {
         const seedPromotions: Record<string, Promotion> = {};
@@ -111,8 +128,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (data) {
         const items = Array.isArray(data) ? data.filter(Boolean) : Object.values(data);
         const sorted = (items as AdminNotification[]).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        writeCache('notifications', sorted);
         setNotifications(sorted);
       } else {
+        writeCache('notifications', []);
         setNotifications([]);
       }
     });
@@ -124,7 +143,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       unsubscribePromotions();
       unsubscribeNotifications();
     };
-  }, []);
+  }, [uid]);
 
   // Simulation: Automated Restock Alerts
   useEffect(() => {
