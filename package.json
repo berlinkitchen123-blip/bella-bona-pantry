@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@react-spring/web": "^9.7.5",
     "firebase": "^12.15.0",
     "fuse.js": "^7.0.0",
     "gsap": "^3.12.5",
