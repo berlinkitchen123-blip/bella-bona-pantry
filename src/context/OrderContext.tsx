@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { Order, CartEntry, DeliveryOption, PantryItem, Promotion, AdminNotification } from '../types';
 import { PANTRY_ITEMS } from '../data/mockData';
-import { ref, onValue, set, update, get } from 'firebase/database';
+import { ref, onValue, set, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useAuth } from './AuthContext';
 import { readCache, writeCache } from '../lib/localCache';
