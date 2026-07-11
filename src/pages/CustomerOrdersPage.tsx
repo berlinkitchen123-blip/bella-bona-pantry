@@ -2,8 +2,83 @@ import { useOrders } from '../context/OrderContext';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
-import { Clock, CheckCircle, Package, Truck, Copy } from 'lucide-react';
-import type {  Order  } from '../types';
+import { Clock, CheckCircle, Package, Truck, Copy, FileText } from 'lucide-react';
+import type { Order } from '../types';
+
+const STATUS_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
+  pending:    { label: 'Pending',    icon: <Clock className="w-4 h-4" />,        color: 'text-amber-600 bg-amber-50 border-amber-200' },
+  confirmed:  { label: 'Confirmed',  icon: <CheckCircle className="w-4 h-4" />, color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  dispatched: { label: 'Dispatched', icon: <Truck className="w-4 h-4" />,        color: 'text-purple-600 bg-purple-50 border-purple-200' },
+  delivered:  { label: 'Delivered',  icon: <Package className="w-4 h-4" />,      color: 'text-green-600 bg-green-50 border-green-200' },
+  packed:     { label: 'Packed',     icon: <Package className="w-4 h-4" />,      color: 'text-purple-600 bg-purple-50 border-purple-200' },
+  invoiced:   { label: 'Invoiced',   icon: <FileText className="w-4 h-4" />,     color: 'text-slate-600 bg-slate-100 border-slate-200' },
+};
+
+// Map each status to a 0-3 timeline step
+const STATUS_TO_STEP: Record<string, number> = {
+  pending: 0,
+  confirmed: 1,
+  dispatched: 2,
+  packed: 2,
+  delivered: 3,
+  invoiced: 3,
+};
+
+function StatusPill({ status }: { status: Order['status'] }) {
+  const meta = STATUS_META[status] ?? STATUS_META['pending'];
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${meta.color}`}>
+      {meta.icon}
+      {meta.label}
+    </span>
+  );
+}
+
+function StatusTimeline({ status }: { status: Order['status'] }) {
+  const currentStep = STATUS_TO_STEP[status] ?? 0;
+  const steps = [
+    { key: 'pending',    label: 'Pending',    icon: <Clock className="w-3.5 h-3.5" /> },
+    { key: 'confirmed',  label: 'Confirmed',  icon: <CheckCircle className="w-3.5 h-3.5" /> },
+    { key: 'dispatched', label: 'Dispatched', icon: <Truck className="w-3.5 h-3.5" /> },
+    { key: 'delivered',  label: 'Delivered',  icon: <Package className="w-3.5 h-3.5" /> },
+  ];
+
+  return (
+    <div className="flex items-start w-full mt-4">
+      {steps.map((step, i) => {
+        const isDone = i < currentStep;
+        const isCurrent = i === currentStep;
+        return (
+          <div key={step.key} className="flex items-center flex-1 last:flex-none">
+            {/* Node + label */}
+            <div className="flex flex-col items-center gap-1 z-10">
+              <div
+                className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all
+                  ${isDone    ? 'bg-brand-900 border-brand-900 text-white' : ''}
+                  ${isCurrent ? 'bg-white border-brand-900 text-brand-900 shadow-md ring-2 ring-brand-900/10' : ''}
+                  ${!isDone && !isCurrent ? 'bg-surface-100 border-surface-200 text-surface-400' : ''}`}
+              >
+                {step.icon}
+              </div>
+              <span
+                className={`text-[10px] font-semibold whitespace-nowrap
+                  ${isCurrent ? 'text-brand-900' : isDone ? 'text-brand-700' : 'text-surface-400'}`}
+              >
+                {step.label}
+              </span>
+            </div>
+            {/* Connector line */}
+            {i < steps.length - 1 && (
+              <div
+                className={`flex-1 h-0.5 mx-1 mb-4 rounded-full transition-all ${i < currentStep ? 'bg-brand-900' : 'bg-surface-200'}`}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function CustomerOrdersPage() {
   const { orders } = useOrders();
@@ -11,30 +86,20 @@ export default function CustomerOrdersPage() {
   const { addItem, clearCart } = useCart();
   const navigate = useNavigate();
 
-  // Filter orders for the current user's company
-  const myOrders = orders.filter(o => o.companyName === user?.company);
-
-  const getStatusBadge = (status: Order['status']) => {
-    switch (status) {
-      case 'pending': return <span className="badge-warning"><Clock className="w-3 h-3 mr-1" /> Pending</span>;
-      case 'confirmed': return <span className="badge-info"><CheckCircle className="w-3 h-3 mr-1" /> Confirmed</span>;
-      case 'packed': return <span className="badge-info bg-purple-50 text-purple-700 border-purple-200"><Package className="w-3 h-3 mr-1" /> Packed</span>;
-      case 'delivered': return <span className="badge-success"><Truck className="w-3 h-3 mr-1" /> Delivered</span>;
-      case 'invoiced': return <span className="badge bg-slate-100 text-slate-700 border-slate-200"><CheckCircle className="w-3 h-3 mr-1" /> Invoiced</span>;
-    }
-  };
+  // Filter to current user's orders by companyEmail or companyName
+  const myOrders = orders.filter(o =>
+    (user?.email && o.companyEmail === user.email) ||
+    (user?.company && o.companyName === user.company)
+  );
 
   const handleReorder = (order: Order) => {
     clearCart();
     order.items.forEach(entry => {
-      // simulate adding to cart
-      for(let i=0; i<entry.quantity; i++){
+      for (let i = 0; i < entry.quantity; i++) {
         addItem(entry.item);
       }
     });
     navigate('/catalog');
-    // We let the CartSidebar handle the rest by popping open (the user can manually open it or see the badge jump)
-    // You could trigger the sidebar here if you exposed a method, but showing a notification is sufficient.
     alert('Items from the previous order have been added to your cart.');
   };
 
@@ -42,7 +107,7 @@ export default function CustomerOrdersPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-surface-900 mb-1">Order History</h1>
-        <p className="text-surface-500 text-sm">Review your past deliveries and quickly reorder.</p>
+        <p className="text-surface-500 text-sm">Track your deliveries and quickly reorder past items.</p>
       </div>
 
       {myOrders.length === 0 ? (
@@ -52,47 +117,72 @@ export default function CustomerOrdersPage() {
           <p className="text-sm text-surface-500">Your order history will appear here.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {myOrders.map(order => (
-            <div key={order.id} className="card p-5 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-5 border-b border-surface-100">
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-bold text-surface-900">{order.id}</h3>
-                    {getStatusBadge(order.status)}
+        <div className="space-y-5">
+          {myOrders.map(order => {
+            const itemCount = order.items.reduce((sum, e) => sum + e.quantity, 0);
+            return (
+              <div key={order.id} className="bg-white rounded-2xl border border-surface-200 shadow-sm overflow-hidden">
+                {/* Header row */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 pt-5 pb-4 border-b border-surface-100">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="font-bold text-surface-900 text-sm">{order.id}</span>
+                    <StatusPill status={order.status} />
+                    <span className="text-xs text-surface-400 bg-surface-100 px-2 py-0.5 rounded-full">
+                      {itemCount} item{itemCount !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                  <p className="text-xs text-surface-500">
-                    Placed on {new Date(order.placedAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-surface-500">
+                      {new Date(order.placedAt).toLocaleDateString('en-GB', {
+                        day: 'numeric', month: 'short', year: 'numeric',
+                      })}
+                    </span>
+                    {order.deliveryDate && (
+                      <span className={`text-xs px-2.5 py-1 rounded-lg font-semibold ${
+                        order.deliveryType === 'specific_time'
+                          ? 'bg-amber-50 text-amber-700'
+                          : 'bg-surface-100 text-surface-600'
+                      }`}>
+                        {order.deliveryType === 'specific_time'
+                          ? `⚡ ${order.deliveryTimeWindow || 'Specific Time'}`
+                          : `🚚 ${order.deliveryDate}`}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleReorder(order)}
+                      className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Reorder
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2.5 py-1 rounded-lg font-semibold ${order.deliveryType === 'specific_time' ? 'bg-amber-50 text-amber-700' : 'bg-surface-100 text-surface-600'}`}>
-                    {order.deliveryType === 'specific_time' ? `⚡ ${order.deliveryTimeWindow || 'Specific Time'}` : '🚚 Standard'}
-                  </span>
-                  <span className="text-xs text-surface-500 font-medium">{order.deliveryDate}</span>
-                  <button
-                    onClick={() => handleReorder(order)}
-                    className="btn-secondary py-1.5 px-3 text-xs"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    Reorder List
-                  </button>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {order.items.map(entry => (
-                  <div key={entry.item.id} className="flex items-center gap-2 p-2 rounded-lg bg-surface-50 border border-surface-100">
-                    <span className="text-xl">{entry.item.emoji}</span>
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-bold text-surface-800 line-clamp-1">{entry.item.name}</p>
-                      <p className="text-[10px] text-surface-500">Qty: {entry.quantity}</p>
-                    </div>
+                {/* Status timeline */}
+                <div className="px-5 pb-2 pt-2">
+                  <StatusTimeline status={order.status} />
+                </div>
+
+                {/* Items grid */}
+                <div className="px-5 pb-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {order.items.map(entry => (
+                      <div
+                        key={entry.item.id}
+                        className="flex items-center gap-2 p-2.5 rounded-xl bg-surface-50 border border-surface-100"
+                      >
+                        <span className="text-xl">{entry.item.emoji}</span>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-bold text-surface-800 line-clamp-1">{entry.item.name}</p>
+                          <p className="text-[10px] text-surface-500">Qty: {entry.quantity}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
