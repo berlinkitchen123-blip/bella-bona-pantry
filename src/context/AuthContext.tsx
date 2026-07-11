@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
 import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  signOut as firebaseSignOut,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signInWithRedirect,
+    getRedirectResult,
+    signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { ref, onValue, set } from 'firebase/database';
 import { auth, googleProvider, db } from '../firebase';
@@ -16,143 +17,140 @@ const ADMIN_EMAIL = 'berlinkitchen123@gmail.com';
 const CACHE_KEY = 'authUser';
 
 interface ProfileDetails {
-  name: string;
-  company: string;
-  companyAddress: string;
+    name: string;
+    company: string;
+    companyAddress: string;
 }
 
 interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  isAdmin: boolean;
-  signupWithEmail: (email: string, password: string, details: ProfileDetails) => Promise<void>;
-  loginWithEmail: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  completeProfile: (details: ProfileDetails) => Promise<void>;
-  logout: () => Promise<void>;
+    user: User | null;
+    loading: boolean;
+    isAdmin: boolean;
+    signupWithEmail: (email: string, password: string, details: ProfileDetails) => Promise<void>;
+    loginWithEmail: (email: string, password: string) => Promise<void>;
+    loginWithGoogle: () => Promise<void>;
+    completeProfile: (details: ProfileDetails) => Promise<void>;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 function roleForEmail(email: string): 'admin' | 'customer' {
-  return email.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'customer';
+    return email.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'customer';
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Lazy-init from the last known profile so a returning session renders the
-  // app immediately instead of sitting on a blocking spinner while Firebase
-  // re-confirms the session and re-fetches the profile over the network.
-  const cachedUser = readCache<User>(CACHE_KEY);
-  const [user, setUser] = useState<User | null>(cachedUser);
-  const [loading, setLoading] = useState(!cachedUser);
+    const cachedUser = readCache<User>(CACHE_KEY);
+    const [user, setUser] = useState<User | null>(cachedUser);
+    const [loading, setLoading] = useState(!cachedUser);
 
   useEffect(() => {
-    let unsubscribeProfile: (() => void) | null = null;
+        let unsubscribeProfile: (() => void) | null = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
-      if (unsubscribeProfile) {
-        unsubscribeProfile();
-        unsubscribeProfile = null;
-      }
+                // Process any pending Google redirect result on page load.
+                // GitHub Pages sets COOP: same-origin which breaks signInWithPopup (popup loses
+                // opener contact). We use signInWithRedirect instead; on return, Firebase fires
+                // onAuthStateChanged automatically — getRedirectResult just clears any error.
+                getRedirectResult(auth).catch(() => {});
 
-      if (!fbUser) {
-        setUser(null);
-        setLoading(false);
-        clearCache(CACHE_KEY);
-        return;
-      }
+                const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
+                        if (unsubscribeProfile) {
+                                  unsubscribeProfile();
+                                  unsubscribeProfile = null;
+                        }
 
-      const profileRef = ref(db, `users/${fbUser.uid}`);
-      unsubscribeProfile = onValue(profileRef, (snapshot) => {
-        const profile = snapshot.val();
-        const role = roleForEmail(fbUser.email || '');
-        let resolved: User;
+                                                                 if (!fbUser) {
+                                                                           setUser(null);
+                                                                           setLoading(false);
+                                                                           clearCache(CACHE_KEY);
+                                                                           return;
+                                                                 }
 
-        if (!profile) {
-          // First sign-in via Google — seed a minimal profile; company info collected on Complete Profile page.
-          resolved = {
-            uid: fbUser.uid,
-            email: fbUser.email || '',
-            name: fbUser.displayName || (fbUser.email || '').split('@')[0],
-            company: '',
-            companyAddress: '',
-            role,
-          };
-          set(profileRef, resolved);
-        } else {
-          resolved = { ...profile, uid: fbUser.uid, email: fbUser.email || profile.email, role } as User;
-        }
-        writeCache(CACHE_KEY, resolved);
-        setUser(resolved);
-        setLoading(false);
-      });
-    });
+                                                                 const profileRef = ref(db, `users/${fbUser.uid}`);
+                        unsubscribeProfile = onValue(profileRef, (snapshot) => {
+                                  const profile = snapshot.val();
+                                  const role = roleForEmail(fbUser.email || '');
+                                  let resolved: User;
 
-    return () => {
-      unsubscribeAuth();
-      if (unsubscribeProfile) unsubscribeProfile();
-    };
+                                                             if (!profile) {
+                                                                         resolved = {
+                                                                                       uid: fbUser.uid,
+                                                                                       email: fbUser.email || '',
+                                                                                       name: fbUser.displayName || (fbUser.email || '').split('@')[0],
+                                                                                       company: '',
+                                                                                       companyAddress: '',
+                                                                                       role,
+                                                                         };
+                                                                         set(profileRef, resolved);
+                                                             } else {
+                                                                         resolved = { ...profile, uid: fbUser.uid, email: fbUser.email || profile.email, role } as User;
+                                                             }
+                                  writeCache(CACHE_KEY, resolved);
+                                  setUser(resolved);
+                                  setLoading(false);
+                        });
+                });
+
+                return () => {
+                        unsubscribeAuth();
+                        if (unsubscribeProfile) unsubscribeProfile();
+                };
   }, []);
 
   const signupWithEmail = async (email: string, password: string, details: ProfileDetails) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    const profile: User = {
-      uid: cred.user.uid,
-      email,
-      name: details.name,
-      company: details.company,
-      companyAddress: details.companyAddress,
-      role: roleForEmail(email),
-    };
-    await set(ref(db, `users/${cred.user.uid}`), profile);
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const profile: User = {
+                uid: cred.user.uid,
+                email,
+                name: details.name,
+                company: details.company,
+                companyAddress: details.companyAddress,
+                role: roleForEmail(email),
+        };
+        await set(ref(db, `users/${cred.user.uid}`), profile);
   };
 
   const loginWithEmail = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(auth, email, password);
   };
 
   const loginWithGoogle = async () => {
-    // signInWithPopup can hang indefinitely if the popup's completion signal is
-    // lost (browser popup blockers, third-party cookie restrictions, COOP
-    // interactions between the opener and accounts.google.com) — it neither
-    // resolves nor rejects, so the "Connecting…" button never recovers on its
-    // own. Race it against a timeout so the user always gets a clear error.
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('auth/popup-timeout')), 20000)
-    );
-    await Promise.race([signInWithPopup(auth, googleProvider), timeout]);
+        // GitHub Pages sets Cross-Origin-Opener-Policy: same-origin which severs the
+        // popup connection, causing signInWithPopup to hang. Use redirect flow instead.
+        await signInWithRedirect(auth, googleProvider);
   };
 
   const completeProfile = async (details: ProfileDetails) => {
-    if (!user) throw new Error('Not signed in.');
-    await set(ref(db, `users/${user.uid}`), { ...user, ...details });
+        if (!user) throw new Error('Not signed in.');
+        await set(ref(db, `users/${user.uid}`), { ...user, ...details });
   };
 
   const logout = async () => {
-    clearCache(CACHE_KEY);
-    await firebaseSignOut(auth);
+        clearCache(CACHE_KEY);
+        await firebaseSignOut(auth);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAdmin: user?.role === 'admin',
-        signupWithEmail,
-        loginWithEmail,
-        loginWithGoogle,
-        completeProfile,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+        <AuthContext.Provider
+                value={{
+                          user,
+                          loading,
+                          isAdmin: user?.role === 'admin',
+                          signupWithEmail,
+                          loginWithEmail,
+                          loginWithGoogle,
+                          completeProfile,
+                          logout,
+                }}
+              >
+          {children}
+        </AuthContext.Provider>AuthContext.Provider>
+      );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+    const ctx = useContext(AuthContext);
+    if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+    return ctx;
 }
+</AuthContext.Provider>
