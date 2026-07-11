@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { PantryItem } from '../types';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { useFavourites } from '../hooks/useFavourites';
 import { Minus, Plus, AlertCircle, Info, ThumbsUp, X, Activity, Leaf, Heart, Wheat, Droplets, Calendar } from 'lucide-react';
 import { CATEGORIES } from '../data/mockData';
 import { thumbnailUrl } from '../lib/imageProxy';
@@ -17,7 +19,10 @@ export default function ItemCard({ item, stockCount, index = 0 }: Props) {
   const { addItem, removeItem, getQuantity } = useCart();
   const quantity = getQuantity(item.id);
   const [showInfo, setShowInfo] = useState(false);
-  const [voted, setVoted] = useState(false);
+  const { user } = useAuth();
+  const { isFavourite, toggleFavourite } = useFavourites();
+
+  const favourited = isFavourite(item.id);
 
   const catInfo = CATEGORIES.find(c => c.key === item.category);
   const bgColor = catInfo?.color || '#f5f5f5';
@@ -122,19 +127,21 @@ export default function ItemCard({ item, stockCount, index = 0 }: Props) {
                 <AlertCircle className="w-2.5 h-2.5" /> Low Stock
               </span>
             )}
-            {voted ? (
-              <motion.span
-                initial={{ scale: 0 }} animate={{ scale: 1 }}
-                className="px-2 py-0.5 rounded-md bg-brand-900 text-white text-[9px] font-black uppercase tracking-wider flex items-center gap-1"
+            {favourited ? (
+              <motion.button
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                onClick={() => toggleFavourite(item.id)}
+                className="px-2 py-0.5 rounded-md bg-red-500 text-white text-[9px] font-black uppercase tracking-wider flex items-center gap-1"
               >
-                <Heart className="w-2.5 h-2.5 fill-current" /> Voted!
-              </motion.span>
+                <Heart className="w-2.5 h-2.5 fill-current" /> Saved
+              </motion.button>
             ) : (
               <button
-                onClick={() => setVoted(true)}
-                className="px-2 py-0.5 rounded-md bg-surface-50 text-surface-400 hover:text-brand-900 hover:bg-brand-50 text-[9px] font-black uppercase tracking-wider transition-colors flex items-center gap-1"
+                onClick={() => toggleFavourite(item.id)}
+                className="px-2 py-0.5 rounded-md bg-surface-50 text-surface-400 hover:text-red-500 hover:bg-red-50 text-[9px] font-black uppercase tracking-wider transition-colors flex items-center gap-1"
               >
-                <ThumbsUp className="w-2.5 h-2.5" /> {item.votes || 0}
+                <Heart className="w-2.5 h-2.5" /> {item.votes || 0}
               </button>
             )}
           </div>
