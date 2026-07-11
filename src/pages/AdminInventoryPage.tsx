@@ -2,12 +2,17 @@ import { useState, useMemo } from 'react';
 import { useOrders } from '../context/OrderContext';
 import CategoryTabs from '../components/CategoryTabs';
 import type { Category, PantryItem } from '../types';
-import { Bot, Plus, X, UploadCloud, Loader2, Minus, Trash2, Save } from 'lucide-react';
+import { ref, set, update } from 'firebase/database';
+import { db } from '../firebase';
+import { Bot, Plus, X, UploadCloud, Loader2, Minus, Trash2, Save, RotateCcw, Euro } from 'lucide-react';
 
 export default function AdminInventoryPage() {
   const { stockCounts, updateStockCount, catalog, addCatalogItem, removeCatalogItem } = useOrders();
   const [activeCat, setActiveCat] = useState<Category | 'all'>('all');
-  
+
+  // Local price state: { [itemId]: string } — editable string while typing
+  const [localPrices, setLocalPrices] = useState<Record<string, string>>({});
+
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
@@ -16,6 +21,9 @@ export default function AdminInventoryPage() {
   // Edit states
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tempCount, setTempCount] = useState<string>('');
+
+  // Bulk reset confirmation
+  const [resetting, setResetting] = useState(false);
 
   const filteredItems = useMemo(() => {
     return catalog.filter(item => activeCat === 'all' || item.category === activeCat);
@@ -28,6 +36,25 @@ export default function AdminInventoryPage() {
     });
     return counts;
   }, [catalog]);
+
+  // Save price to Firebase /catalog/{id}/price on blur
+  const handlePriceBlur = (itemId: string) => {
+    const raw = localPrices[itemId];
+    if (raw === undefined) return; // not touched
+    const parsed = parseFloat(raw);
+    const price = isNaN(parsed) ? null : Math.max(0, parsed);
+    update(ref(db, `catalog/${itemId}`), { price });
+  };
+
+  // Reset all stock counts to 50 in a single batch write
+  const handleResetAllStock = async () => {
+    if (!window.confirm('Reset ALL stock counts to 50? This cannot be undone.')) return;
+    setResetting(true);
+    const batch: Record<string, number> = {};
+    catalog.forEach(item => { batch[item.id] = 50; });
+    await set(ref(db, 'stockCounts'), batch);
+    setResetting(false);
+  };
 
   const handleSimulateScan = () => {
     setIsScanning(true);
@@ -47,7 +74,7 @@ export default function AdminInventoryPage() {
   };
 
   const handleConfirmAdd = () => {
-    if(!scanResult) return;
+    if (!scanResult) return;
     addCatalogItem({
       id: `itm-${Date.now()}`,
       ...scanResult,
@@ -75,15 +102,32 @@ export default function AdminInventoryPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 gap-6">
         <div>
           <h1 className="text-3xl font-black text-brand-900 tracking-tight mb-2">Inventory Management</h1>
-          <p className="text-surface-500 font-medium">Control stock levels and expand your catalog with AI.</p>
+          <p className="text-surface-500 font-medium">Control stock levels, prices, and expand your catalog with AI.</p>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary shadow-brand-900/10 hover:shadow-brand-900/20"
-        >
-          <Bot className="w-5 h-5 mr-2" />
-          AI Stock Scan
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Bulk stock reset */}
+          <button
+            onClick={handleResetAllStock}
+            disabled={resetting}
+            className="btn-secondary flex items-center gap-2 text-sm py-2.5 px-4 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+            title="Set every item's stock to 50"
+          >
+            {resetting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RotateCcw className="w-4 h-4" />
+            )}
+            Reset All Stock to 50
+          </button>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary shadow-brand-900/10 hover:shadow-brand-900/20"
+          >
+            <Bot className="w-5 h-5 mr-2" />
+            AI Stock Scan
+          </button>
+        </div>
       </div>
 
       <div className="mb-8 p-1 bg-surface-100 rounded-2xl inline-block">
@@ -94,18 +138,22 @@ export default function AdminInventoryPage() {
         <div className="divide-y divide-surface-100">
           {filteredItems.length === 0 ? (
             <div className="p-24 text-center flex flex-col items-center animate-fade-in">
-               <div className="w-20 h-20 rounded-full bg-surface-50 flex items-center justify-center text-4xl mb-6 grayscale opacity-40">📦</div>
-               <p className="font-bold text-surface-900 text-lg">No items cataloged here.</p>
-               <p className="text-sm text-surface-500 mt-2 max-w-xs leading-relaxed">Switch categories or use the AI Scanner above to add new products to your pantry.</p>
+              <div className="w-20 h-20 rounded-full bg-surface-50 flex items-center justify-center text-4xl mb-6 grayscale opacity-40">📦</div>
+              <p className="font-bold text-surface-900 text-lg">No items cataloged here.</p>
+              <p className="text-sm text-surface-500 mt-2 max-w-xs leading-relaxed">Switch categories or use the AI Scanner above to add new products to your pantry.</p>
             </div>
           ) : filteredItems.map(item => {
             const count = stockCounts[item.id] || 0;
             const isEditing = editingId === item.id;
+            // Determine displayed price: local input if touched, else item.price
+            const priceDisplay = localPrices[item.id] !== undefined
+              ? localPrices[item.id]
+              : ((item as any).price !== undefined && (item as any).price !== null ? String((item as any).price) : '');
 
             return (
               <div key={item.id} className={`flex items-center justify-between p-6 transition-all duration-300 ${count > 0 ? 'hover:bg-brand-50/30' : 'bg-red-50/20'}`}>
                 <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 rounded-2xl bg-surface-50 border border-surface-100 flex items-center justify-center text-3xl shadow-sm group-hover:scale-105 transition-transform">
+                  <div className="w-14 h-14 rounded-2xl bg-surface-50 border border-surface-100 flex items-center justify-center text-3xl shadow-sm">
                     {item.emoji}
                   </div>
                   <div>
@@ -116,8 +164,26 @@ export default function AdminInventoryPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-8">
-                  {/* Stock Control Unit */}
+                <div className="flex items-center gap-6">
+                  {/* Price field */}
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[10px] font-black text-surface-400 uppercase tracking-widest">Price</span>
+                    <div className="flex items-center gap-1 bg-white border border-surface-200 rounded-xl px-2.5 py-1.5 hover:border-brand-300 transition-colors shadow-sm">
+                      <Euro className="w-3.5 h-3.5 text-surface-400 flex-shrink-0" />
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={priceDisplay}
+                        onChange={e => setLocalPrices(prev => ({ ...prev, [item.id]: e.target.value }))}
+                        onBlur={() => handlePriceBlur(item.id)}
+                        className="w-16 text-sm font-bold text-brand-900 focus:outline-none bg-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Stock Control */}
                   <div className="flex flex-col items-end gap-2">
                     <span className="text-[10px] font-black text-surface-400 uppercase tracking-widest">Inventory Level</span>
                     <div className="flex items-center gap-3">
@@ -131,7 +197,7 @@ export default function AdminInventoryPage() {
                             autoFocus
                             onKeyDown={(e) => e.key === 'Enter' && saveEdit(item.id)}
                           />
-                          <button 
+                          <button
                             onClick={() => saveEdit(item.id)}
                             className="p-2.5 bg-brand-900 text-white rounded-xl hover:bg-brand-800 transition-all shadow-md active:scale-90"
                             title="Save changes"
@@ -140,24 +206,22 @@ export default function AdminInventoryPage() {
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 bg-white px-2 py-2 rounded-2xl border border-surface-200 shadow-sm transition-all hover:border-brand-300 hover:shadow-md group">
-                          <button 
+                        <div className="flex items-center gap-2 bg-white px-2 py-2 rounded-2xl border border-surface-200 shadow-sm transition-all hover:border-brand-300 hover:shadow-md">
+                          <button
                             onClick={() => updateStockCount(item.id, count - 1)}
                             className="w-10 h-10 flex items-center justify-center bg-surface-100 text-surface-600 rounded-xl hover:bg-red-500 hover:text-white transition-all active:scale-90"
                             title="Decrease stock"
                           >
                             <Minus className="w-5 h-5" />
                           </button>
-                          
-                          <div 
+                          <div
                             onClick={() => startEdit(item)}
                             className={`min-w-[64px] px-2 text-center text-xl font-black cursor-pointer hover:text-brand-900 transition-colors ${count === 0 ? 'text-red-500' : 'text-brand-900'}`}
                             title="Click to type number"
                           >
                             {count}
                           </div>
-
-                          <button 
+                          <button
                             onClick={() => updateStockCount(item.id, count + 1)}
                             className="w-10 h-10 flex items-center justify-center bg-brand-900 text-white rounded-xl hover:bg-brand-800 transition-all active:scale-90"
                             title="Increase stock"
@@ -169,20 +233,20 @@ export default function AdminInventoryPage() {
                     </div>
                   </div>
 
-                  {/* Removal Action */}
+                  {/* Remove */}
                   <div className="border-l border-surface-100 pl-6 flex flex-col items-center gap-1">
-                     <button
-                        onClick={() => {
-                          if(window.confirm(`Remove ${item.name} from global catalog?`)) {
-                            removeCatalogItem(item.id);
-                          }
-                        }}
-                        className="p-3 text-surface-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90 group/trash"
-                        title="Delete product"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                      <span className="text-[9px] font-black text-surface-400 group-hover:text-red-500 transition-colors uppercase tracking-tighter">Remove</span>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Remove ${item.name} from global catalog?`)) {
+                          removeCatalogItem(item.id);
+                        }
+                      }}
+                      className="p-3 text-surface-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
+                      title="Delete product"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                    <span className="text-[9px] font-black text-surface-400 uppercase tracking-tighter">Remove</span>
                   </div>
                 </div>
               </div>
@@ -202,17 +266,17 @@ export default function AdminInventoryPage() {
                 </div>
                 AI Stock Pulse
               </h3>
-              <button 
+              <button
                 onClick={() => { setShowAddModal(false); setScanResult(null); }}
                 className="w-10 h-10 flex items-center justify-center bg-surface-50 text-surface-400 hover:text-brand-900 rounded-full transition-all"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="p-8">
               {!scanResult ? (
-                <div 
+                <div
                   className={`border-[3px] border-dashed rounded-3xl p-10 text-center cursor-pointer transition-all duration-300 ${isScanning ? 'border-brand-900 bg-brand-50 animate-pulse' : 'border-surface-200 hover:border-brand-900 hover:bg-surface-50'}`}
                   onClick={!isScanning ? handleSimulateScan : undefined}
                 >
@@ -232,12 +296,11 @@ export default function AdminInventoryPage() {
               ) : (
                 <div className="space-y-6 animate-fade-in text-left">
                   <div className="flex items-center gap-3 text-brand-900">
-                     <div className="w-2 h-2 rounded-full bg-brand-900 animate-ping" />
-                     <p className="text-xs font-black uppercase tracking-widest">Product Identified</p>
+                    <div className="w-2 h-2 rounded-full bg-brand-900 animate-ping" />
+                    <p className="text-xs font-black uppercase tracking-widest">Product Identified</p>
                   </div>
-                  
                   <div className="flex items-center gap-6 p-5 bg-surface-50 rounded-3xl border border-surface-100">
-                    <div className="w-20 h-20 bg-white border border-surface-100 rounded-2xl flex items-center justify-center text-4xl shadow-inner group-hover:scale-110 transition-transform">
+                    <div className="w-20 h-20 bg-white border border-surface-100 rounded-2xl flex items-center justify-center text-4xl shadow-inner">
                       {scanResult.emoji}
                     </div>
                     <div>
@@ -245,8 +308,7 @@ export default function AdminInventoryPage() {
                       <p className="text-xs font-bold text-brand-700 uppercase tracking-wider">{scanResult.category} • {scanResult.unit}</p>
                     </div>
                   </div>
-
-                  <button 
+                  <button
                     onClick={handleConfirmAdd}
                     className="w-full btn-primary py-5 flex justify-center mt-4 text-base"
                   >
