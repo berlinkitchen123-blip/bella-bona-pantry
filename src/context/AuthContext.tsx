@@ -16,7 +16,7 @@ import { readCache, writeCache, clearCache } from '../lib/localCache';
 const ADMIN_EMAIL = 'berlinkitchen123@gmail.com';
 const CACHE_KEY = 'authUser';
 
-interface ProfileDetails {
+interface ProfileDetails 
     name: string;
     company: string;
     companyAddress: string;
@@ -144,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }}
               >
           {children}
-        </AuthContext.Provider>AuthContext.Provider>
+        </AuthContext.Provider>
       );
 }
 
@@ -153,4 +153,4 @@ export function useAuth() {
     if (!ctx) throw new Error('useAuth must be used within AuthProvider');
     return ctx;
 }
-</AuthContext.Provider>
+
