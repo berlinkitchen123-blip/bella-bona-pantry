@@ -9,7 +9,8 @@ import {
     signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { ref, onValue, set } from 'firebase/database';
-import { auth, googleProvider, db } from '../firebase';
+import { auth, googleProvider, db } from '../firebase';19
+
 import type { User } from '../types';
 import { readCache, writeCache, clearCache } from '../lib/localCache';
 
