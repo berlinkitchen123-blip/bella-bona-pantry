@@ -16,6 +16,7 @@ import AdminFulfillmentPage from './pages/AdminFulfillmentPage';
 import AdminInventoryPage from './pages/AdminInventoryPage';
 import AdminInvoicesPage from './pages/AdminInvoicesPage';
 import AdminCustomersPage from './pages/AdminCustomersPage';
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
 
 // Protectors
 function ProtectedRoute({ children, reqAdmin = false }: { children: ReactNode, reqAdmin?: boolean }) {
@@ -37,7 +38,6 @@ function LoadingScreen() {
   );
 }
 
-// Sub-app with hooks loaded
 function AppRoutes() {
   const { user, isAdmin, loading } = useAuth();
 
@@ -69,6 +69,7 @@ function AppRoutes() {
           <Route path="admin/inventory" element={<ProtectedRoute reqAdmin><AdminInventoryPage /></ProtectedRoute>} />
           <Route path="admin/invoices" element={<ProtectedRoute reqAdmin><AdminInvoicesPage /></ProtectedRoute>} />
           <Route path="admin/customers" element={<ProtectedRoute reqAdmin><AdminCustomersPage /></ProtectedRoute>} />
+          <Route path="admin/analytics" element={<ProtectedRoute reqAdmin><AdminAnalyticsPage /></ProtectedRoute>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
