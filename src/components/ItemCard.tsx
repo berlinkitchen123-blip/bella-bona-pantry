@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { PantryItem } from '../types';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
-import { useFavourites } from '../hooks/useFavourites';
-import { Minus, Plus, AlertCircle, Info, ThumbsUp, X, Activity, Leaf, Heart, Wheat, Droplets, Calendar } from 'lucide-react';
+import { useFavourites } from '../context/FavouritesContext';
+import { Minus, Plus, AlertCircle, Info, X, Activity, Leaf, Heart, Wheat, Droplets } from 'lucide-react';
 import { CATEGORIES } from '../data/mockData';
 import { thumbnailUrl } from '../lib/imageProxy';
 
@@ -17,10 +16,9 @@ interface Props {
 export default function ItemCard({ item, stockCount, index = 0 }: Props) {
   const inStock = stockCount > 0;
   const { addItem, removeItem, getQuantity } = useCart();
+  const { toggleFavourite, isFavourite } = useFavourites();
   const quantity = getQuantity(item.id);
   const [showInfo, setShowInfo] = useState(false);
-  const { user } = useAuth();
-  const { isFavourite, toggleFavourite } = useFavourites();
 
   const favourited = isFavourite(item.id);
 
@@ -127,23 +125,45 @@ export default function ItemCard({ item, stockCount, index = 0 }: Props) {
                 <AlertCircle className="w-2.5 h-2.5" /> Low Stock
               </span>
             )}
-            {favourited ? (
-              <motion.button
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                onClick={() => toggleFavourite(item.id)}
-                className="px-2 py-0.5 rounded-md bg-red-500 text-white text-[9px] font-black uppercase tracking-wider flex items-center gap-1"
-              >
-                <Heart className="w-2.5 h-2.5 fill-current" /> Saved
-              </motion.button>
-            ) : (
-              <button
-                onClick={() => toggleFavourite(item.id)}
-                className="px-2 py-0.5 rounded-md bg-surface-50 text-surface-400 hover:text-red-500 hover:bg-red-50 text-[9px] font-black uppercase tracking-wider transition-colors flex items-center gap-1"
-              >
-                <Heart className="w-2.5 h-2.5" /> {item.votes || 0}
-              </button>
-            )}
+
+            {/* Favourites toggle */}
+            <motion.button
+              whileTap={{ scale: 0.8 }}
+              onClick={() => toggleFavourite(item.id)}
+              className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-colors flex items-center gap-1 ${
+                favourited
+                  ? 'bg-red-50 text-red-600 border border-red-100'
+                  : 'bg-surface-50 text-surface-400 hover:text-red-500 hover:bg-red-50'
+              }`}
+              aria-label={favourited ? 'Remove from favourites' : 'Add to favourites'}
+            >
+              <AnimatePresence mode="wait">
+                {favourited ? (
+                  <motion.span
+                    key="filled"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                    className="flex items-center gap-1"
+                  >
+                    <Heart className="w-2.5 h-2.5 fill-current text-red-500" />
+                    Saved
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="outline"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    className="flex items-center gap-1"
+                  >
+                    <Heart className="w-2.5 h-2.5" />
+                    Save
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
           </div>
 
           {/* Controls */}
