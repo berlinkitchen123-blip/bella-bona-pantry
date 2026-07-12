@@ -17,7 +17,6 @@ ExternalLink,
 Printer,
 User,
 Calendar,
-Clock,
 } from 'lucide-react';
 import type { CartEntry, Order } from '../types';
 
@@ -445,11 +444,6 @@ order.status === 'pending'
 {order.deliveryType === 'specific_time' && order.deliveryTimeWindow && (
 <span className="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded-md border border-amber-200 font-black">
 ⏰ Specific time: {order.deliveryTimeWindow.replace(' - ', ' – ')}
-</span>
-)}
-{order.deliveryType === 'express' && (
-<span className="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded-md border border-amber-200 font-black">
-⚡ Express delivery
 </span>
 )}
 </div>
