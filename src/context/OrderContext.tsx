@@ -236,6 +236,18 @@ notionSyncStatus: 'pending'
 
 set(ref(db, `orders/${order.id}`), order);
 
+// Deduct stock for each ordered item
+const stockUpdates: Record<string, number> = {};
+for (const entry of items) {
+  if (entry.item?.id) {
+    const current = stockCounts[entry.item.id] ?? 0;
+    stockUpdates[entry.item.id] = Math.max(0, current - entry.quantity);
+  }
+}
+if (Object.keys(stockUpdates).length > 0) {
+  update(ref(db, 'stockCounts'), stockUpdates);
+}
+
 // Auto-trigger Notion Sync
 setTimeout(() => syncToNotion(order.id), 500);
 
@@ -250,7 +262,7 @@ timestamp: new Date().toISOString()
 set(ref(db, `notifications/${logisticsNotif.id}`), logisticsNotif);
 
 return order;
-}, [orders, syncToNotion]);
+}, [orders, stockCounts, syncToNotion]);
 
 const updateOrderStatus = useCallback((orderId: string, status: Order['status']) => {
 update(ref(db, `orders/${orderId}`), { status });
