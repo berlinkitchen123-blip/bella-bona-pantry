@@ -1,24 +1,35 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, Search, Building2, Mail, MapPin, ShieldCheck, ShieldAlert, MoreVertical, CheckCircle2, Clock, X } from 'lucide-react';
+import { UserPlus, Search, Building2, Mail, MapPin, ShieldCheck, ShieldAlert, MoreVertical, CheckCircle2, Clock, X, ShoppingCart } from 'lucide-react';
 import { ref, onValue, set, update } from 'firebase/database';
 import { db } from '../firebase';
+import { useOrders } from '../context/OrderContext';
 import type { Customer } from '../types';
+
+interface CustomerWithOrders extends Customer {
+  ordersCount: number;
+  lastOrderDate?: string;
+}
 
 export default function AdminCustomersPage() {
   const [search, setSearch] = useState('');
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerWithOrders[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCust, setNewCust] = useState({
     companyName: '', contactPerson: '', email: '', address: '',
     tier: 'basic' as Customer['pantryTier']
   });
 
+  const { orders } = useOrders();
+
+  // Firebase users (role === 'customer')
+  const [firebaseCustomers, setFirebaseCustomers] = useState<CustomerWithOrders[]>([]);
+
   useEffect(() => {
     const unsubscribe = onValue(ref(db, 'users'), (snapshot) => {
       const data = snapshot.val();
-      if (!data) { setCustomers([]); return; }
+      if (!data) { setFirebaseCustomers([]); return; }
       const entries = Object.entries(data) as Array<[string, Record<string, unknown>]>;
-      const list: Customer[] = entries
+      const list: CustomerWithOrders[] = entries
         .filter(([, u]) => u['role'] === 'customer')
         .map(([uid, u]) => ({
           id: uid,
@@ -31,11 +42,70 @@ export default function AdminCustomersPage() {
           onboardedAt: String(u['onboardedAt'] || new Date().toISOString().split('T')[0]),
           lastLogin: u['lastLogin'] as string | undefined,
           allowSpecificTime: Boolean(u['allowSpecificTime'] ?? false),
+          ordersCount: 0,
+          lastOrderDate: undefined,
         }));
-      setCustomers(list);
+      setFirebaseCustomers(list);
     });
     return () => unsubscribe();
   }, []);
+
+  // Build merged customer list from orders + Firebase users
+  useEffect(() => {
+    const safeOrders = orders || [];
+
+    // Build map from orders keyed by email
+    const orderMap: Record<string, { companyName: string; email: string; address: string; ordersCount: number; lastOrderDate: string }> = {};
+    safeOrders.forEach(order => {
+      const email = order.companyEmail || '';
+      if (!email) return;
+      if (!orderMap[email]) {
+        orderMap[email] = {
+          companyName: order.companyName || email,
+          email,
+          address: order.companyAddress || '',
+          ordersCount: 0,
+          lastOrderDate: order.placedAt || '',
+        };
+      }
+      orderMap[email].ordersCount += 1;
+      const d = order.placedAt || '';
+      if (d > orderMap[email].lastOrderDate) {
+        orderMap[email].lastOrderDate = d;
+      }
+    });
+
+    // Firebase users take priority for same email — merge order counts in
+    const fbEmails = new Set(firebaseCustomers.map(c => c.email));
+    const fbMerged: CustomerWithOrders[] = firebaseCustomers.map(c => {
+      const od = orderMap[c.email];
+      return {
+        ...c,
+        ordersCount: od?.ordersCount ?? 0,
+        lastOrderDate: od?.lastOrderDate,
+      };
+    });
+
+    // Add order-only customers not in Firebase
+    const orderOnlyCustomers: CustomerWithOrders[] = Object.values(orderMap)
+      .filter(od => !fbEmails.has(od.email))
+      .map(od => ({
+        id: `order-${od.email}`,
+        companyName: od.companyName,
+        contactPerson: '',
+        email: od.email,
+        address: od.address,
+        status: 'active' as Customer['status'],
+        pantryTier: 'basic' as Customer['pantryTier'],
+        onboardedAt: od.lastOrderDate?.split('T')[0] || '',
+        lastLogin: undefined,
+        allowSpecificTime: false,
+        ordersCount: od.ordersCount,
+        lastOrderDate: od.lastOrderDate,
+      }));
+
+    setCustomers([...fbMerged, ...orderOnlyCustomers]);
+  }, [firebaseCustomers, orders]);
 
   const filteredCustomers = customers.filter(c =>
     c.companyName.toLowerCase().includes(search.toLowerCase()) ||
@@ -43,6 +113,7 @@ export default function AdminCustomersPage() {
   );
 
   const toggleStatus = (id: string) => {
+    if (id.startsWith('order-')) return;
     const c = customers.find(x => x.id === id);
     if (!c) return;
     const next = c.status === 'active' ? 'suspended' : 'active';
@@ -50,9 +121,10 @@ export default function AdminCustomersPage() {
   };
 
   const handleExportCSV = () => {
-    const rows = ['Company,Email,Address,Tier,Status,Onboarded'];
+    const rows = ['Company,Email,Address,Tier,Status,Onboarded,Orders,Last Order'];
     filteredCustomers.forEach(c => {
-      rows.push(`${c.companyName},${c.email},${c.address},${c.pantryTier},${c.status},${c.onboardedAt}`);
+      const lastDate = c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleDateString('en-GB') : '';
+      rows.push(`${c.companyName},${c.email},${c.address},${c.pantryTier},${c.status},${c.onboardedAt},${c.ordersCount},${lastDate}`);
     });
     const csv = rows.join('\n');
     const a = document.createElement('a');
@@ -75,6 +147,11 @@ export default function AdminCustomersPage() {
     set(ref(db, `users/${id}`), record);
     setShowAddModal(false);
     setNewCust({ companyName: '', contactPerson: '', email: '', address: '', tier: 'basic' });
+  };
+
+  const formatDate = (iso?: string) => {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   return (
@@ -143,7 +220,7 @@ export default function AdminCustomersPage() {
           <div className="p-16 text-center text-surface-400">
             <Building2 className="w-12 h-12 mx-auto mb-4 opacity-20" />
             <p className="font-bold">No customers yet.</p>
-            <p className="text-sm mt-1">Customers appear here once they sign up and complete their profile.</p>
+            <p className="text-sm mt-1">Customers appear here once they sign up or place an order.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -152,6 +229,7 @@ export default function AdminCustomersPage() {
                 <tr className="bg-surface-50/50">
                   <th className="px-8 py-4 text-[10px] font-black text-surface-400 uppercase tracking-widest">Company</th>
                   <th className="px-8 py-4 text-[10px] font-black text-surface-400 uppercase tracking-widest">Contact</th>
+                  <th className="px-8 py-4 text-[10px] font-black text-surface-400 uppercase tracking-widest">Orders</th>
                   <th className="px-8 py-4 text-[10px] font-black text-surface-400 uppercase tracking-widest">Status</th>
                   <th className="px-8 py-4 text-[10px] font-black text-surface-400 uppercase tracking-widest">Onboarded</th>
                   <th className="px-8 py-4"></th>
@@ -188,13 +266,23 @@ export default function AdminCustomersPage() {
                       ) : null}
                     </td>
                     <td className="px-8 py-6">
+                      <div className="flex items-center gap-2">
+                        <ShoppingCart className="w-4 h-4 text-surface-300" />
+                        <span className="text-sm font-black text-surface-900">{customer.ordersCount}</span>
+                      </div>
+                      {customer.lastOrderDate ? (
+                        <p className="text-[10px] text-surface-400 mt-1">Last: {formatDate(customer.lastOrderDate)}</p>
+                      ) : null}
+                    </td>
+                    <td className="px-8 py-6">
                       <button
                         onClick={() => toggleStatus(customer.id)}
+                        disabled={customer.id.startsWith('order-')}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
                           customer.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' :
                           customer.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                           'bg-red-50 text-red-700 border-red-100'
-                        }`}
+                        } disabled:cursor-default`}
                       >
                         {customer.status === 'active'
                           ? <ShieldCheck className="w-4 h-4" />
