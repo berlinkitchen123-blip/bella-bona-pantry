@@ -6,12 +6,12 @@ import { Clock, CheckCircle, Package, Truck, Copy, FileText } from 'lucide-react
 import type { Order } from '../types';
 
 const STATUS_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  pending:    { label: 'Pending',    icon: <Clock className="w-4 h-4" />,        color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  confirmed:  { label: 'Confirmed',  icon: <CheckCircle className="w-4 h-4" />, color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  dispatched: { label: 'Dispatched', icon: <Truck className="w-4 h-4" />,        color: 'text-purple-600 bg-purple-50 border-purple-200' },
-  delivered:  { label: 'Delivered',  icon: <Package className="w-4 h-4" />,      color: 'text-green-600 bg-green-50 border-green-200' },
-  packed:     { label: 'Packed',     icon: <Package className="w-4 h-4" />,      color: 'text-purple-600 bg-purple-50 border-purple-200' },
-  invoiced:   { label: 'Invoiced',   icon: <FileText className="w-4 h-4" />,     color: 'text-slate-600 bg-slate-100 border-slate-200' },
+  pending: { label: 'Pending', icon: <Clock className="w-4 h-4" />, color: 'text-amber-600 bg-amber-50 border-amber-200' },
+  confirmed: { label: 'Confirmed', icon: <CheckCircle className="w-4 h-4" />, color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  dispatched: { label: 'Dispatched', icon: <Truck className="w-4 h-4" />, color: 'text-purple-600 bg-purple-50 border-purple-200' },
+  delivered: { label: 'Delivered', icon: <Package className="w-4 h-4" />, color: 'text-green-600 bg-green-50 border-green-200' },
+  packed: { label: 'Packed', icon: <Package className="w-4 h-4" />, color: 'text-purple-600 bg-purple-50 border-purple-200' },
+  invoiced: { label: 'Invoiced', icon: <FileText className="w-4 h-4" />, color: 'text-slate-600 bg-slate-100 border-slate-200' },
 };
 
 // Map each status to a 0-3 timeline step
@@ -23,6 +23,27 @@ const STATUS_TO_STEP: Record<string, number> = {
   delivered: 3,
   invoiced: 3,
 };
+
+function formatOrderedAt(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const datePart = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const timePart = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return `${datePart} at ${timePart.toUpperCase()}`;
+  } catch {
+    return iso;
+  }
+}
+
+function formatDeliveryDate(dateStr: string): string {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
 
 function StatusPill({ status }: { status: Order['status'] }) {
   const meta = STATUS_META[status] ?? STATUS_META['pending'];
@@ -37,10 +58,10 @@ function StatusPill({ status }: { status: Order['status'] }) {
 function StatusTimeline({ status }: { status: Order['status'] }) {
   const currentStep = STATUS_TO_STEP[status] ?? 0;
   const steps = [
-    { key: 'pending',    label: 'Pending',    icon: <Clock className="w-3.5 h-3.5" /> },
-    { key: 'confirmed',  label: 'Confirmed',  icon: <CheckCircle className="w-3.5 h-3.5" /> },
+    { key: 'pending', label: 'Pending', icon: <Clock className="w-3.5 h-3.5" /> },
+    { key: 'confirmed', label: 'Confirmed', icon: <CheckCircle className="w-3.5 h-3.5" /> },
     { key: 'dispatched', label: 'Dispatched', icon: <Truck className="w-3.5 h-3.5" /> },
-    { key: 'delivered',  label: 'Delivered',  icon: <Package className="w-3.5 h-3.5" /> },
+    { key: 'delivered', label: 'Delivered', icon: <Package className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -54,7 +75,7 @@ function StatusTimeline({ status }: { status: Order['status'] }) {
             <div className="flex flex-col items-center gap-1 z-10">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all
-                  ${isDone    ? 'bg-brand-900 border-brand-900 text-white' : ''}
+                  ${isDone ? 'bg-brand-900 border-brand-900 text-white' : ''}
                   ${isCurrent ? 'bg-white border-brand-900 text-brand-900 shadow-md ring-2 ring-brand-900/10' : ''}
                   ${!isDone && !isCurrent ? 'bg-surface-100 border-surface-200 text-surface-400' : ''}`}
               >
@@ -62,9 +83,10 @@ function StatusTimeline({ status }: { status: Order['status'] }) {
               </div>
               <span
                 className={`text-[10px] font-semibold whitespace-nowrap
-                  ${isCurrent ? 'text-brand-900' : isDone ? 'text-brand-700' : 'text-surface-400'}`}
+                  ${isCurrent ? 'text-brand-900 font-bold' : isDone ? 'text-brand-700' : 'text-surface-400'}`}
               >
                 {step.label}
+                {isCurrent && <span className="ml-0.5">●</span>}
               </span>
             </div>
             {/* Connector line */}
@@ -120,6 +142,7 @@ export default function CustomerOrdersPage() {
         <div className="space-y-5">
           {myOrders.map(order => {
             const itemCount = order.items.reduce((sum, e) => sum + e.quantity, 0);
+            const totalItems = order.items.length;
             return (
               <div key={order.id} className="bg-white rounded-2xl border border-surface-200 shadow-sm overflow-hidden">
                 {/* Header row */}
@@ -128,38 +151,48 @@ export default function CustomerOrdersPage() {
                     <span className="font-bold text-surface-900 text-sm">{order.id}</span>
                     <StatusPill status={order.status} />
                     <span className="text-xs text-surface-400 bg-surface-100 px-2 py-0.5 rounded-full">
-                      {itemCount} item{itemCount !== 1 ? 's' : ''}
+                      {totalItems} product{totalItems !== 1 ? 's' : ''} · {itemCount} item{itemCount !== 1 ? 's' : ''}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-surface-500">
-                      {new Date(order.placedAt).toLocaleDateString('en-GB', {
-                        day: 'numeric', month: 'short', year: 'numeric',
-                      })}
+                  <button
+                    onClick={() => handleReorder(order)}
+                    className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    Reorder
+                  </button>
+                </div>
+
+                {/* Date & delivery info */}
+                <div className="px-5 pt-4 pb-2 space-y-2">
+                  {/* Ordered on */}
+                  <div className="flex items-center gap-2 text-sm text-surface-700">
+                    <span className="text-surface-400">🗓</span>
+                    <span>
+                      <span className="font-semibold text-surface-500">Ordered on:</span>{' '}
+                      <span className="font-bold text-surface-900">{formatOrderedAt(order.placedAt)}</span>
                     </span>
-                    {order.deliveryDate && (
-                      <span className={`text-xs px-2.5 py-1 rounded-lg font-semibold ${
-                        order.deliveryType === 'specific_time'
-                          ? 'bg-amber-50 text-amber-700'
-                          : 'bg-surface-100 text-surface-600'
-                      }`}>
-                        {order.deliveryType === 'specific_time'
-                          ? `⚡ ${order.deliveryTimeWindow || 'Specific Time'}`
-                          : `🚚 ${order.deliveryDate}`}
+                  </div>
+
+                  {/* Delivery date */}
+                  {order.deliveryDate && (
+                    <div className="flex items-center gap-2 text-sm text-surface-700">
+                      <span className="text-surface-400">🚚</span>
+                      <span>
+                        <span className="font-semibold text-surface-500">Delivery:</span>{' '}
+                        <span className="font-bold text-surface-900">{formatDeliveryDate(order.deliveryDate)}</span>
                       </span>
-                    )}
-                    <button
-                      onClick={() => handleReorder(order)}
-                      className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      Reorder
-                    </button>
-                  </div>
+                      {order.deliveryType === 'specific_time' && order.deliveryTimeWindow && (
+                        <span className="ml-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                          ⏰ Delivery time: {order.deliveryTimeWindow.replace(' - ', ' – ')}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Status timeline */}
-                <div className="px-5 pb-2 pt-2">
+                <div className="px-5 pb-2 pt-1">
                   <StatusTimeline status={order.status} />
                 </div>
 
