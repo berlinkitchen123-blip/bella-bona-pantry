@@ -1,26 +1,31 @@
 import { useMemo } from 'react';
 import { useOrders } from '../context/OrderContext';
-import { TrendingUp, ShoppingBag, CheckCircle, Truck, Clock, Package, DollarSign, BarChart2 } from 'lucide-react';
+import { TrendingUp, ShoppingBag, CheckCircle, Truck, Clock, Package, DollarSign, BarChart2, AlertCircle } from 'lucide-react';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 function startOf(period: 'week' | 'month'): Date {
   const now = new Date();
   if (period === 'week') {
-    const day = now.getDay(); // 0=Sun
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Mon
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
     return new Date(now.getFullYear(), now.getMonth(), diff);
   }
   return new Date(now.getFullYear(), now.getMonth(), 1);
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-  pending:    { label: 'Pending',    color: '#d97706', bg: '#fef3c7', icon: <Clock className="w-4 h-4" /> },
-  confirmed:  { label: 'Confirmed',  color: '#2563eb', bg: '#dbeafe', icon: <CheckCircle className="w-4 h-4" /> },
-  packed:     { label: 'Packed',     color: '#7c3aed', bg: '#ede9fe', icon: <Package className="w-4 h-4" /> },
-  dispatched: { label: 'Dispatched', color: '#0891b2', bg: '#cffafe', icon: <Truck className="w-4 h-4" /> },
-  delivered:  { label: 'Delivered',  color: '#16a34a', bg: '#dcfce7', icon: <CheckCircle className="w-4 h-4" /> },
-  invoiced:   { label: 'Invoiced',   color: '#059669', bg: '#d1fae5', icon: <DollarSign className="w-4 h-4" /> },
+function fmtDate(iso?: string): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; text: string; icon: React.ReactNode }> = {
+  pending:   { label: 'Pending',   color: '#d97706', bg: '#fef3c7', text: '#92400e', icon: <Clock className="w-4 h-4" /> },
+  confirmed: { label: 'Confirmed', color: '#2563eb', bg: '#dbeafe', text: '#1e3a8a', icon: <CheckCircle className="w-4 h-4" /> },
+  packed:    { label: 'Packed',    color: '#7c3aed', bg: '#ede9fe', text: '#4c1d95', icon: <Package className="w-4 h-4" /> },
+  dispatched:{ label: 'Dispatched',color: '#0891b2', bg: '#cffafe', text: '#164e63', icon: <Truck className="w-4 h-4" /> },
+  delivered: { label: 'Delivered', color: '#16a34a', bg: '#dcfce7', text: '#14532d', icon: <CheckCircle className="w-4 h-4" /> },
+  invoiced:  { label: 'Invoiced',  color: '#7c3aed', bg: '#ede9fe', text: '#4c1d95', icon: <DollarSign className="w-4 h-4" /> },
 };
 
 // ─── component ──────────────────────────────────────────────────────────────
@@ -29,7 +34,7 @@ export default function AdminAnalyticsPage() {
   const { orders } = useOrders();
   const safeOrders = orders || [];
 
-  const weekStart  = startOf('week');
+  const weekStart = startOf('week');
   const monthStart = startOf('month');
 
   // ── KPI counts ──────────────────────────────────────────────────────────
@@ -45,13 +50,18 @@ export default function AdminAnalyticsPage() {
   // ── Status breakdown ─────────────────────────────────────────────────────
   const statusBreakdown = useMemo(() => {
     const counts: Record<string, number> = {};
-    safeOrders.forEach(o => {
-      counts[o.status] = (counts[o.status] || 0) + 1;
-    });
+    safeOrders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
   }, [safeOrders]);
 
   const totalOrders = safeOrders.length;
+
+  // ── 4-card status highlights ─────────────────────────────────────────────
+  const statusCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    safeOrders.forEach(o => { m[o.status] = (m[o.status] || 0) + 1; });
+    return m;
+  }, [safeOrders]);
 
   // ── Top 10 items ─────────────────────────────────────────────────────────
   const topItems = useMemo(() => {
@@ -69,6 +79,54 @@ export default function AdminAnalyticsPage() {
 
   const maxQty = topItems[0]?.qty || 1;
 
+  // ── Recent 5 orders ───────────────────────────────────────────────────────
+  const recentOrders = useMemo(() =>
+    [...safeOrders]
+      .sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime())
+      .slice(0, 5),
+    [safeOrders]
+  );
+
+  // ── Status highlight card config ─────────────────────────────────────────
+  const highlightCards = [
+    {
+      key: 'pending',
+      label: 'Pending',
+      color: 'amber',
+      bgClass: 'bg-amber-50',
+      textClass: 'text-amber-700',
+      borderClass: 'border-amber-100',
+      icon: <AlertCircle className="w-5 h-5 text-amber-600" />,
+    },
+    {
+      key: 'confirmed',
+      label: 'Confirmed',
+      color: 'blue',
+      bgClass: 'bg-blue-50',
+      textClass: 'text-blue-700',
+      borderClass: 'border-blue-100',
+      icon: <CheckCircle className="w-5 h-5 text-blue-600" />,
+    },
+    {
+      key: 'invoiced',
+      label: 'Invoiced',
+      color: 'violet',
+      bgClass: 'bg-violet-50',
+      textClass: 'text-violet-700',
+      borderClass: 'border-violet-100',
+      icon: <DollarSign className="w-5 h-5 text-violet-600" />,
+    },
+    {
+      key: 'delivered',
+      label: 'Delivered',
+      color: 'green',
+      bgClass: 'bg-green-50',
+      textClass: 'text-green-700',
+      borderClass: 'border-green-100',
+      icon: <Truck className="w-5 h-5 text-green-600" />,
+    },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in font-sans">
 
@@ -79,11 +137,11 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Orders This Week',  value: ordersThisWeek,  icon: <TrendingUp className="w-5 h-5 text-brand-900" />,  bg: 'bg-brand-50' },
-          { label: 'Orders This Month', value: ordersThisMonth, icon: <ShoppingBag className="w-5 h-5 text-blue-700" />,  bg: 'bg-blue-50' },
-          { label: 'Total Orders',      value: totalOrders,     icon: <BarChart2 className="w-5 h-5 text-violet-700" />, bg: 'bg-violet-50' },
+          { label: 'Orders This Week',  value: ordersThisWeek,  icon: <TrendingUp className="w-5 h-5 text-brand-900" />,   bg: 'bg-brand-50' },
+          { label: 'Orders This Month', value: ordersThisMonth, icon: <ShoppingBag className="w-5 h-5 text-blue-700" />,   bg: 'bg-blue-50' },
+          { label: 'Total Orders',      value: totalOrders,     icon: <BarChart2 className="w-5 h-5 text-violet-700" />,   bg: 'bg-violet-50' },
           {
             label: 'Total Revenue',
             value: totalRevenue > 0 ? `€${totalRevenue.toLocaleString('de-DE', { minimumFractionDigits: 2 })}` : '—',
@@ -101,6 +159,96 @@ export default function AdminAnalyticsPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Status highlight row: Pending / Confirmed / Invoiced / Delivered */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+        {highlightCards.map(card => {
+          const count = statusCounts[card.key] || 0;
+          const pct = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
+          return (
+            <div
+              key={card.key}
+              className={`rounded-2xl border p-5 flex flex-col gap-3 ${card.bgClass} ${card.borderClass}`}
+            >
+              <div className="flex items-center justify-between">
+                {card.icon}
+                <span className={`text-[10px] font-black uppercase ${card.textClass}`}>{card.label}</span>
+              </div>
+              <div>
+                <p className={`text-3xl font-black leading-none ${card.textClass}`}>{count}</p>
+                <p className={`text-xs font-semibold mt-1 ${card.textClass} opacity-70`}>{pct}% of total</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Recent orders table */}
+      <div className="bg-white rounded-3xl border border-surface-100 shadow-sm p-6 mb-8">
+        <h2 className="text-xs font-black uppercase tracking-[0.2em] text-surface-400 mb-6 flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5" /> Recent Orders
+        </h2>
+        {recentOrders.length === 0 ? (
+          <div className="py-8 text-center text-surface-400 font-medium text-sm">No orders yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-surface-100">
+                  <th className="pb-3 text-[10px] font-black text-surface-400 uppercase tracking-widest pr-6">Order ID</th>
+                  <th className="pb-3 text-[10px] font-black text-surface-400 uppercase tracking-widest pr-6">Company</th>
+                  <th className="pb-3 text-[10px] font-black text-surface-400 uppercase tracking-widest pr-6">Order Date</th>
+                  <th className="pb-3 text-[10px] font-black text-surface-400 uppercase tracking-widest pr-6">Delivery Date</th>
+                  <th className="pb-3 text-[10px] font-black text-surface-400 uppercase tracking-widest pr-6">Status</th>
+                  <th className="pb-3 text-[10px] font-black text-surface-400 uppercase tracking-widest text-right">Invoice</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-50">
+                {recentOrders.map(order => {
+                  const cfg = STATUS_CONFIG[order.status];
+                  return (
+                    <tr key={order.id} className="hover:bg-surface-50/50 transition-colors">
+                      <td className="py-4 pr-6">
+                        <span className="text-xs font-black text-brand-900 font-mono">
+                          #{String(order.id).slice(-6).toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="py-4 pr-6">
+                        <p className="text-sm font-bold text-surface-900 truncate max-w-[140px]">
+                          {order.companyName || '—'}
+                        </p>
+                      </td>
+                      <td className="py-4 pr-6">
+                        <span className="text-xs font-semibold text-surface-600">{fmtDate(order.placedAt)}</span>
+                      </td>
+                      <td className="py-4 pr-6">
+                        <span className="text-xs font-semibold text-surface-600">{fmtDate(order.deliveryDate)}</span>
+                      </td>
+                      <td className="py-4 pr-6">
+                        <span
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black uppercase"
+                          style={{ backgroundColor: cfg?.bg ?? '#f3f4f6', color: cfg?.text ?? '#374151' }}
+                        >
+                          {cfg?.icon}
+                          {cfg?.label ?? order.status}
+                        </span>
+                      </td>
+                      <td className="py-4 text-right">
+                        <span className="text-xs font-black text-surface-900">
+                          {order.invoiceTotal != null
+                            ? `€${order.invoiceTotal.toLocaleString('de-DE', { minimumFractionDigits: 2 })}`
+                            : '—'
+                          }
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
