@@ -15,6 +15,9 @@ Activity as ActivityIcon,
 RefreshCw,
 ExternalLink,
 Printer,
+User,
+Calendar,
+Clock,
 } from 'lucide-react';
 import type { CartEntry, Order } from '../types';
 
@@ -24,6 +27,33 @@ jspdf: {
 jsPDF: new (options?: { orientation?: string; unit?: string; format?: string | number[] }) => any;
 };
 };
+
+function formatPlacedAt(iso: string): string {
+try {
+const d = new Date(iso);
+return d.toLocaleString('en-GB', {
+day: '2-digit',
+month: 'short',
+year: 'numeric',
+hour: '2-digit',
+minute: '2-digit',
+hour12: false,
+}).replace(',', '');
+} catch {
+return iso;
+}
+}
+
+function formatDeliveryDate(dateStr: string): string {
+try {
+// dateStr is "YYYY-MM-DD"
+const [y, m, d] = dateStr.split('-').map(Number);
+const date = new Date(y, m - 1, d);
+return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+} catch {
+return dateStr;
+}
+}
 
 function printOrderPDF(order: Order) {
 const { jsPDF } = window.jspdf;
@@ -393,12 +423,33 @@ order.status === 'pending'
 <MapPin className="w-3.5 h-3.5 text-surface-300" />
 {order.companyAddress}
 </div>
+
+{/* Contact person row */}
+<div className="flex items-center gap-2.5 text-xs font-semibold text-surface-700">
+<User className="w-3.5 h-3.5 text-surface-300" />
+<span>
+👤 Contact: {order.companyName} – {order.companyEmail}
+</span>
+</div>
+
+{/* Ordered date */}
+<div className="flex items-center gap-2.5 text-xs font-semibold text-surface-700">
+<Calendar className="w-3.5 h-3.5 text-surface-400" />
+<span>📅 Ordered: {formatPlacedAt(order.placedAt)}</span>
+</div>
+
+{/* Delivery date */}
 <div className="flex items-center gap-2.5 text-xs font-semibold text-surface-700">
 <CalendarClock className="w-3.5 h-3.5 text-brand-900" />
-{order.deliveryDate}
-{order.deliveryType === 'specific_time' && (
-<span className="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded-md border border-amber-200">
-PRIORITY: {order.deliveryTimeWindow}
+<span>🚚 Deliver by: {formatDeliveryDate(order.deliveryDate)}</span>
+{order.deliveryType === 'specific_time' && order.deliveryTimeWindow && (
+<span className="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded-md border border-amber-200 font-black">
+⏰ Specific time: {order.deliveryTimeWindow.replace(' - ', ' – ')}
+</span>
+)}
+{order.deliveryType === 'express' && (
+<span className="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded-md border border-amber-200 font-black">
+⚡ Express delivery
 </span>
 )}
 </div>
