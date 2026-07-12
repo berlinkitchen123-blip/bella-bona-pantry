@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { UserPlus, Search, Building2, Mail, MapPin, ShieldCheck, ShieldAlert, MoreVertical, CheckCircle2, Clock, X, ShoppingCart } from 'lucide-react';
 import { ref, onValue, set, update } from 'firebase/database';
 import { db } from '../firebase';
@@ -8,6 +8,7 @@ import type { Customer } from '../types';
 interface CustomerWithOrders extends Customer {
   ordersCount: number;
   lastOrderDate?: string;
+  notes?: string;
 }
 
 export default function AdminCustomersPage() {
@@ -19,10 +20,61 @@ export default function AdminCustomersPage() {
     tier: 'basic' as Customer['pantryTier']
   });
 
+  // Edit modal state
+  const [editingCustomer, setEditingCustomer] = useState<CustomerWithOrders | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    companyName: '', contactPerson: '', email: '', address: '',
+    tier: 'basic' as Customer['pantryTier'], notes: ''
+  });
+
+  // Dropdown menu state
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   const { orders } = useOrders();
 
   // Firebase users (role === 'customer')
   const [firebaseCustomers, setFirebaseCustomers] = useState<CustomerWithOrders[]>([]);
+
+  // customerStatus overrides from Firebase (keyed by sanitizedEmail)
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, { status: string; updatedAt: string }>>({});
+
+  // customerDetails overrides from Firebase (keyed by sanitizedEmail)
+  const [detailsOverrides, setDetailsOverrides] = useState<Record<string, Partial<CustomerWithOrders>>>({});
+
+  const sanitizeEmail = (email: string) => email.replace(/[@.]/g, '_');
+
+  // Load customerStatus on mount
+  useEffect(() => {
+    const unsubscribe = onValue(ref(db, 'customerStatus'), (snapshot) => {
+      const data = snapshot.val();
+      if (!data) { setStatusOverrides({}); return; }
+      setStatusOverrides(data as Record<string, { status: string; updatedAt: string }>);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load customerDetails on mount
+  useEffect(() => {
+    const unsubscribe = onValue(ref(db, 'customerDetails'), (snapshot) => {
+      const data = snapshot.val();
+      if (!data) { setDetailsOverrides({}); return; }
+      setDetailsOverrides(data as Record<string, Partial<CustomerWithOrders>>);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onValue(ref(db, 'users'), (snapshot) => {
@@ -79,33 +131,44 @@ export default function AdminCustomersPage() {
     const fbEmails = new Set(firebaseCustomers.map(c => c.email));
     const fbMerged: CustomerWithOrders[] = firebaseCustomers.map(c => {
       const od = orderMap[c.email];
+      const key = sanitizeEmail(c.email);
+      const statusOverride = statusOverrides[key];
+      const detailOverride = detailsOverrides[key];
       return {
         ...c,
+        ...(detailOverride || {}),
         ordersCount: od?.ordersCount ?? 0,
         lastOrderDate: od?.lastOrderDate,
+        status: (statusOverride?.status as Customer['status']) || c.status,
       };
     });
 
     // Add order-only customers not in Firebase
     const orderOnlyCustomers: CustomerWithOrders[] = Object.values(orderMap)
       .filter(od => !fbEmails.has(od.email))
-      .map(od => ({
-        id: `order-${od.email}`,
-        companyName: od.companyName,
-        contactPerson: '',
-        email: od.email,
-        address: od.address,
-        status: 'active' as Customer['status'],
-        pantryTier: 'basic' as Customer['pantryTier'],
-        onboardedAt: od.lastOrderDate?.split('T')[0] || '',
-        lastLogin: undefined,
-        allowSpecificTime: false,
-        ordersCount: od.ordersCount,
-        lastOrderDate: od.lastOrderDate,
-      }));
+      .map(od => {
+        const key = sanitizeEmail(od.email);
+        const statusOverride = statusOverrides[key];
+        const detailOverride = detailsOverrides[key];
+        return {
+          id: `order-${od.email}`,
+          companyName: od.companyName,
+          contactPerson: '',
+          email: od.email,
+          address: od.address,
+          status: ((statusOverride?.status as Customer['status']) || 'active') as Customer['status'],
+          pantryTier: 'basic' as Customer['pantryTier'],
+          onboardedAt: od.lastOrderDate?.split('T')[0] || '',
+          lastLogin: undefined,
+          allowSpecificTime: false,
+          ordersCount: od.ordersCount,
+          lastOrderDate: od.lastOrderDate,
+          ...(detailOverride || {}),
+        };
+      });
 
     setCustomers([...fbMerged, ...orderOnlyCustomers]);
-  }, [firebaseCustomers, orders]);
+  }, [firebaseCustomers, orders, statusOverrides, detailsOverrides]);
 
   const filteredCustomers = customers.filter(c =>
     c.companyName.toLowerCase().includes(search.toLowerCase()) ||
@@ -113,11 +176,54 @@ export default function AdminCustomersPage() {
   );
 
   const toggleStatus = (id: string) => {
-    if (id.startsWith('order-')) return;
     const c = customers.find(x => x.id === id);
     if (!c) return;
     const next = c.status === 'active' ? 'suspended' : 'active';
-    update(ref(db, `users/${id}`), { status: next });
+
+    if (id.startsWith('order-')) {
+      // Order-extracted customer: store status in /customerStatus/{sanitizedEmail}
+      const key = sanitizeEmail(c.email);
+      update(ref(db, `customerStatus/${key}`), { status: next, updatedAt: new Date().toISOString() });
+    } else {
+      // Firebase user: update directly in /users/{id}
+      update(ref(db, `users/${id}`), { status: next });
+      // Also store in /customerStatus for consistency
+      if (c.email) {
+        const key = sanitizeEmail(c.email);
+        update(ref(db, `customerStatus/${key}`), { status: next, updatedAt: new Date().toISOString() });
+      }
+    }
+  };
+
+  const openEditModal = (customer: CustomerWithOrders) => {
+    setEditingCustomer(customer);
+    setEditForm({
+      companyName: customer.companyName,
+      contactPerson: customer.contactPerson || '',
+      email: customer.email,
+      address: customer.address || '',
+      tier: customer.pantryTier,
+      notes: customer.notes || '',
+    });
+    setShowEditModal(true);
+    setOpenMenuId(null);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCustomer) return;
+    const key = sanitizeEmail(editingCustomer.email);
+    update(ref(db, `customerDetails/${key}`), {
+      companyName: editForm.companyName,
+      contactPerson: editForm.contactPerson,
+      email: editForm.email,
+      address: editForm.address,
+      pantryTier: editForm.tier,
+      notes: editForm.notes,
+      updatedAt: new Date().toISOString(),
+    });
+    setShowEditModal(false);
+    setEditingCustomer(null);
   };
 
   const handleExportCSV = () => {
@@ -277,12 +383,11 @@ export default function AdminCustomersPage() {
                     <td className="px-8 py-6">
                       <button
                         onClick={() => toggleStatus(customer.id)}
-                        disabled={customer.id.startsWith('order-')}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
                           customer.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' :
                           customer.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                           'bg-red-50 text-red-700 border-red-100'
-                        } disabled:cursor-default`}
+                        }`}
                       >
                         {customer.status === 'active'
                           ? <ShieldCheck className="w-4 h-4" />
@@ -301,10 +406,32 @@ export default function AdminCustomersPage() {
                         : null
                       }
                     </td>
-                    <td className="px-8 py-6 text-right">
-                      <button className="p-2 text-surface-300 hover:text-brand-900 rounded-xl">
+                    <td className="px-8 py-6 text-right relative">
+                      <button
+                        className="p-2 text-surface-300 hover:text-brand-900 rounded-xl"
+                        onClick={() => setOpenMenuId(openMenuId === customer.id ? null : customer.id)}
+                      >
                         <MoreVertical className="w-5 h-5" />
                       </button>
+                      {openMenuId === customer.id && (
+                        <div
+                          ref={menuRef}
+                          className="absolute right-8 top-full mt-1 z-20 bg-white border border-surface-100 rounded-2xl shadow-lg overflow-hidden min-w-[160px]"
+                        >
+                          <button
+                            className="w-full text-left px-4 py-3 text-sm font-semibold text-surface-700 hover:bg-brand-50 hover:text-brand-900 transition-colors"
+                            onClick={() => openEditModal(customer)}
+                          >
+                            Edit Details
+                          </button>
+                          <button
+                            className="w-full text-left px-4 py-3 text-sm font-semibold text-surface-700 hover:bg-brand-50 hover:text-brand-900 transition-colors"
+                            onClick={() => { toggleStatus(customer.id); setOpenMenuId(null); }}
+                          >
+                            Toggle Status
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -314,6 +441,109 @@ export default function AdminCustomersPage() {
         )}
       </div>
 
+      {/* Edit Modal */}
+      {showEditModal && editingCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-900/60 backdrop-blur-md">
+          <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-xl overflow-hidden">
+            <div className="flex items-center justify-between px-10 py-8 border-b border-surface-50">
+              <h3 className="text-2xl font-black text-brand-900">Edit Customer</h3>
+              <button
+                onClick={() => { setShowEditModal(false); setEditingCustomer(null); }}
+                className="w-10 h-10 flex items-center justify-center bg-surface-50 rounded-full"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="p-10 space-y-5">
+              <div className="grid grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-[11px] font-black text-surface-400 uppercase tracking-widest mb-2">Company Name</label>
+                  <input
+                    required
+                    className="input-field"
+                    value={editForm.companyName}
+                    onChange={e => setEditForm({ ...editForm, companyName: e.target.value })}
+                    placeholder="Acme GmbH"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-black text-surface-400 uppercase tracking-widest mb-2">Contact Person</label>
+                  <input
+                    className="input-field"
+                    value={editForm.contactPerson}
+                    onChange={e => setEditForm({ ...editForm, contactPerson: e.target.value })}
+                    placeholder="Max Müller"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-black text-surface-400 uppercase tracking-widest mb-2">Email</label>
+                <input
+                  required
+                  type="email"
+                  className="input-field"
+                  value={editForm.email}
+                  onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                  placeholder="office@company.com"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-black text-surface-400 uppercase tracking-widest mb-2">Delivery Address</label>
+                <input
+                  className="input-field"
+                  value={editForm.address}
+                  onChange={e => setEditForm({ ...editForm, address: e.target.value })}
+                  placeholder="Street, Number, City"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-black text-surface-400 uppercase tracking-widest mb-2">Pantry Tier</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {(['basic', 'premium', 'enterprise'] as const).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setEditForm({ ...editForm, tier: t })}
+                      className={`p-4 rounded-2xl border-2 text-left ${
+                        editForm.tier === t
+                          ? 'border-brand-900 bg-brand-50 text-brand-900'
+                          : 'border-surface-100 text-surface-400'
+                      }`}
+                    >
+                      {editForm.tier === t && <CheckCircle2 className="w-4 h-4 mb-1" />}
+                      <span className="block text-xs font-black uppercase">{t}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-black text-surface-400 uppercase tracking-widest mb-2">Notes</label>
+                <textarea
+                  className="input-field resize-none"
+                  rows={3}
+                  value={editForm.notes}
+                  onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
+                  placeholder="Internal notes about this customer..."
+                />
+              </div>
+              <div className="flex gap-4 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditModal(false); setEditingCustomer(null); }}
+                  className="flex-1 py-3 text-surface-400 font-black uppercase text-sm"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="flex-[2] btn-primary py-4">
+                  <CheckCircle2 className="w-4 h-4" /> Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Customer Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-900/60 backdrop-blur-md">
           <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-xl overflow-hidden">
