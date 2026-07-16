@@ -16,10 +16,10 @@ type DietaryFilter = 'all' | 'vegan' | 'vegetarian' | 'gluten-free' | 'lactose-f
 
 const DIETARY_PILLS: { value: DietaryFilter; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'vegan', label: '🌱 Vegan' },
-  { value: 'vegetarian', label: '🌿 Vegetarian' },
-  { value: 'gluten-free', label: '🚫 Gluten-Free' },
-  { value: 'lactose-free', label: '🥛 Lactose-Free' },
+  { value: 'vegan', label: 'ð± Vegan' },
+  { value: 'vegetarian', label: 'ð¿ Vegetarian' },
+  { value: 'gluten-free', label: 'ð« Gluten-Free' },
+  { value: 'lactose-free', label: 'ð¥ Lactose-Free' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ export default function CatalogPage() {
 
   const activePromo = promotions.find(p => p.active);
 
-  // Fuse.js instance — keys cover name, brand and description with threshold 0.3
+  // Fuse.js instance â keys cover name, brand and description with threshold 0.3
   const fuse = useMemo(
     () =>
       new Fuse(catalog, {
@@ -125,16 +125,6 @@ export default function CatalogPage() {
           </p>
         </div>
 
-        <div className="relative w-full md:w-80 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 group-hover:text-brand-900 transition-colors" />
-          <input
-            type="text"
-            placeholder="Search items, brands, tags..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-white border-2 border-surface-100 focus:border-brand-900 rounded-2xl pl-12 pr-4 py-4 text-sm font-semibold transition-all outline-none shadow-sm"
-          />
-        </div>
       </div>
 
       {/* Dietary Quick-Filter Pills */}
@@ -168,14 +158,26 @@ export default function CatalogPage() {
       {!isSearchActive && <div className="mb-8" />}
 
       {/* Tabs */}
-      <div className="mb-8 sticky top-16 z-30 bg-[#fafafa]/90 backdrop-blur-md py-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-        <CategoryTabs active={activeCat} onChange={setActiveCat} itemCounts={itemCounts} />
+       <div className="mb-8 sticky top-16 z-30 bg-[#fafafa]/90 backdrop-blur-md py-4 -mx-4 px-4 sm:mx-0 sm:px-0 flex items-center gap-4">
+         <div className="flex-1 min-w-0">
+           <CategoryTabs active={activeCat} onChange={setActiveCat} itemCounts={itemCounts} />
+         </div>
+         <div className="relative group flex-shrink-0">
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 group-hover:text-brand-900 transition-colors" />
+           <input
+             type="text"
+             placeholder="Search items..."
+             value={search}
+             onChange={e => setSearch(e.target.value)}
+             className="w-64 bg-white border-2 border-surface-100 focus:border-brand-900 rounded-2xl pl-10 pr-4 py-2 text-sm font-semibold transition-all outline-none shadow-sm"
+           />
+         </div>
       </div>
 
       {/* Grid */}
       {filteredItems.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-[40px] border border-surface-200 border-dashed">
-          <div className="text-6xl mb-6 grayscale opacity-20">🔎</div>
+          <div className="text-6xl mb-6 grayscale opacity-20">ð</div>
           <h3 className="text-xl font-bold text-surface-900 mb-2">No items found</h3>
           <p className="text-surface-500 font-medium">
             Try adjusting your filters or searching for something else.
@@ -193,14 +195,14 @@ export default function CatalogPage() {
         </div>
       )}
 
-      {/* Mobile Cart FAB — only shown below sm breakpoint */}
+      {/* Mobile Cart FAB â only shown below sm breakpoint */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 sm:hidden">
         <button
           onClick={handleOpenCart}
           className="flex items-center gap-3 bg-brand-900 text-white px-6 py-4 rounded-full shadow-2xl font-black text-sm active:scale-95 transition-transform"
         >
           <ShoppingCart className="w-5 h-5" />
-          {totalItems > 0 ? `${totalItems} items · View Cart` : 'Cart'}
+          {totalItems > 0 ? `${totalItems} items Â· View Cart` : 'Cart'}
         </button>
       </div>
 
