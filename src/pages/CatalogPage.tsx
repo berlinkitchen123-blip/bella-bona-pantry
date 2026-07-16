@@ -3,7 +3,7 @@ import type { Category } from '../types';
 import { useOrders } from '../context/OrderContext';
 import CategoryTabs from '../components/CategoryTabs';
 import ItemCard from '../components/ItemCard';
-import { Search, Sparkles, TrendingUp, Activity, Leaf, ShoppingCart, ArrowRight } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 // @ts-ignore
 import Fuse from 'fuse.js';
@@ -75,15 +75,9 @@ export default function CatalogPage() {
   }, [catalog, stockCounts]);
 
   // Smart Replenishment
-  const suggestedItems = useMemo(() => {
-    return catalog
-      .sort((a, b) => (b.votes || 0) - (a.votes || 0))
-      .slice(0, 4);
   }, [catalog]);
 
   // Wellness Insights
-  const stats = useMemo(() => {
-    const veganCount = catalog.filter(i => i.dietary === 'vegan').length;
     const avgNutri = catalog.filter(
       i => i.nutriScore === 'A' || i.nutriScore === 'B'
     ).length;
@@ -96,9 +90,6 @@ export default function CatalogPage() {
         : 0,
     };
   }, [catalog]);
-
-  const refillAllSuggested = () => {
-    suggestedItems.forEach(item => addItem(item));
   };
 
   const handleOpenCart = () => {
