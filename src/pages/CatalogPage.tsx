@@ -157,21 +157,21 @@ export default function CatalogPage() {
 
       {!isSearchActive && <div className="mb-8" />}
 
+      {/* Search Bar */}
+      <div className="mb-4 relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
+        <input
+          type="text"
+          placeholder="Search products, brands..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full bg-white border border-surface-200 rounded-2xl pl-12 pr-4 py-3 text-base font-medium outline-none shadow-sm focus:border-brand-900 transition-all"
+        />
+      </div>
+
       {/* Tabs */}
-       <div className="mb-8 sticky top-16 z-30 bg-[#fafafa]/90 backdrop-blur-md py-4 -mx-4 px-4 sm:mx-0 sm:px-0 flex items-center gap-4">
-         <div className="flex-1 min-w-0">
-           <CategoryTabs active={activeCat} onChange={setActiveCat} itemCounts={itemCounts} />
-         </div>
-         <div className="relative group flex-shrink-0">
-           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 group-hover:text-brand-900 transition-colors" />
-           <input
-             type="text"
-             placeholder="Search items..."
-             value={search}
-             onChange={e => setSearch(e.target.value)}
-             className="w-64 bg-white border-2 border-surface-100 focus:border-brand-900 rounded-2xl pl-10 pr-4 py-2 text-sm font-semibold transition-all outline-none shadow-sm"
-           />
-         </div>
+      <div className="mb-8 sticky top-16 z-30 bg-[#fafafa]/90 backdrop-blur-md py-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <CategoryTabs active={activeCat} onChange={setActiveCat} itemCounts={itemCounts} />
       </div>
 
       {/* Grid */}
