@@ -47,7 +47,7 @@ export default function AdminInventoryPage() {
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState<Category | 'all'>('all');
 
-  // Local price state: { [itemId]: string } â editable string while typing
+  // Local price state: { [itemId]: string } Ã¢ÂÂ editable string while typing
   const [localPrices, setLocalPrices] = useState<Record<string, string>>({});
 
   // AI Scan Modal states
@@ -75,8 +75,8 @@ export default function AdminInventoryPage() {
 
   const _baseItems = useMemo(() => {
     return catalog.filter(item => activeCat === 'all' || item.category === activeCat);
-  const filteredItems = !search.trim() ? _baseItems : _baseItems.filter(i => i.name.toLowerCase().includes(search.toLowerCase()) || (i.brand || '').toLowerCase().includes(search.toLowerCase()));
   }, [activeCat, catalog]);
+  const filteredItems = !search.trim() ? _baseItems : _baseItems.filter(i => i.name.toLowerCase().includes(search.toLowerCase()) || (i.brand || '').toLowerCase().includes(search.toLowerCase()));
 
   const itemCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -87,7 +87,7 @@ export default function AdminInventoryPage() {
   }, [catalog]);
 
   // ---------------------------------------------------------------------------
-  // Handlers â existing
+  // Handlers Ã¢ÂÂ existing
   // ---------------------------------------------------------------------------
 
   const handlePriceBlur = (itemId: string) => {
@@ -116,7 +116,7 @@ export default function AdminInventoryPage() {
         name: 'Guacamole Dip (Fresh)',
         category: 'snacks',
         unit: 'pack (200g)',
-        emoji: 'ð¥',
+        emoji: 'Ã°ÂÂ¥Â',
         dietary: 'vegan',
         allergens: ['Garlic', 'Onion'],
         stockCount: 20,
@@ -149,7 +149,7 @@ export default function AdminInventoryPage() {
   };
 
   // ---------------------------------------------------------------------------
-  // Handlers â Add/Edit Item Modal
+  // Handlers Ã¢ÂÂ Add/Edit Item Modal
   // ---------------------------------------------------------------------------
 
   const handleImageFile = (file: File) => {
@@ -289,7 +289,7 @@ export default function AdminInventoryPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search by name or brand…"
+            placeholder="Search by name or brandâ¦"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
@@ -302,7 +302,7 @@ export default function AdminInventoryPage() {
         <div className="divide-y divide-surface-100">
           {filteredItems.length === 0 ? (
             <div className="p-24 text-center flex flex-col items-center animate-fade-in">
-              <div className="w-20 h-20 rounded-full bg-surface-50 flex items-center justify-center text-4xl mb-6 grayscale opacity-40">ð¦</div>
+              <div className="w-20 h-20 rounded-full bg-surface-50 flex items-center justify-center text-4xl mb-6 grayscale opacity-40">Ã°ÂÂÂ¦</div>
               <p className="font-bold text-surface-900 text-lg">No items cataloged here.</p>
               <p className="text-sm text-surface-500 mt-2 max-w-xs leading-relaxed">Switch categories or use the AI Scanner above to add new products to your pantry.</p>
             </div>
@@ -326,7 +326,7 @@ export default function AdminInventoryPage() {
                   <div>
                     <h3 className="font-bold text-surface-900 tracking-tight">{item.name}</h3>
                     <p className="text-[11px] font-black text-brand-700 uppercase tracking-widest mt-1">
-                      {item.category} â¢ {item.unit}
+                      {item.category} Ã¢ÂÂ¢ {item.unit}
                     </p>
                   </div>
                 </div>
@@ -488,7 +488,7 @@ export default function AdminInventoryPage() {
                     <div className="flex flex-col items-center gap-2 text-surface-400">
                       <UploadCloud className="w-8 h-8" />
                       <p className="text-sm font-semibold">Click to upload or paste image</p>
-                      <p className="text-xs">PNG, JPG, WEBP â stored as base64</p>
+                      <p className="text-xs">PNG, JPG, WEBP Ã¢ÂÂ stored as base64</p>
                     </div>
                   )}
                   <input
@@ -684,7 +684,7 @@ export default function AdminInventoryPage() {
                     </div>
                     <div>
                       <h4 className="text-xl font-black text-brand-900 tracking-tight">{scanResult.name}</h4>
-                      <p className="text-xs font-bold text-brand-700 uppercase tracking-wider">{scanResult.category} â¢ {scanResult.unit}</p>
+                      <p className="text-xs font-bold text-brand-700 uppercase tracking-wider">{scanResult.category} Ã¢ÂÂ¢ {scanResult.unit}</p>
                     </div>
                   </div>
                   <button
