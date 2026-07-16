@@ -19,6 +19,10 @@ export interface PantryItem {
   sugar?: number;
   fiber?: number;
   votes?: number;
+  brand?: string;
+  description?: string;
+  tags?: string[];
+  price?: number;
   imageUrl?: string;  // fetched by fetch_images.js from Firebase; rendered via thumbnailUrl() proxy
 }
 
