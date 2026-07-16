@@ -3,7 +3,7 @@ import type { Category } from '../types';
 import { useOrders } from '../context/OrderContext';
 import CategoryTabs from '../components/CategoryTabs';
 import ItemCard from '../components/ItemCard';
-import { Search } from 'lucide-react';
+import { Search, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 // @ts-ignore
 import Fuse from 'fuse.js';
@@ -31,7 +31,7 @@ export default function CatalogPage() {
   const [search, setSearch] = useState('');
   const [dietaryFilter, setDietaryFilter] = useState<DietaryFilter>('all');
   const { stockCounts, catalog, promotions } = useOrders();
-  const { addItem, totalItems, openCart } = useCart();
+  const { totalItems, openCart } = useCart();
 
   const activePromo = promotions.find(p => p.active);
 
@@ -73,24 +73,6 @@ export default function CatalogPage() {
     });
     return counts;
   }, [catalog, stockCounts]);
-
-  // Smart Replenishment
-  }, [catalog]);
-
-  // Wellness Insights
-    const avgNutri = catalog.filter(
-      i => i.nutriScore === 'A' || i.nutriScore === 'B'
-    ).length;
-    return {
-      wellnessScore: catalog.length
-        ? Math.round((avgNutri / catalog.length) * 100)
-        : 0,
-      plantBased: catalog.length
-        ? Math.round((veganCount / catalog.length) * 100)
-        : 0,
-    };
-  }, [catalog]);
-  };
 
   const handleOpenCart = () => {
     // Prefer the CartContext's openCart if available; also fire a custom event
@@ -184,7 +166,6 @@ export default function CatalogPage() {
       )}
 
       {!isSearchActive && <div className="mb-8" />}
-
 
       {/* Tabs */}
       <div className="mb-8 sticky top-16 z-30 bg-[#fafafa]/90 backdrop-blur-md py-4 -mx-4 px-4 sm:mx-0 sm:px-0">
