@@ -59,6 +59,9 @@ export default function Header() {
                 <Link to="admin/analytics" className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold transition-all ${isActive('admin/analytics')}`}>
                   <BarChart2 className="w-4 h-4" /> Analytics
                 </Link>
+                <Link to="packing" className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold transition-all ${isActive('packing')}`}>
+                  📦 Packing
+                </Link>
               </>
             ) : (
               <>

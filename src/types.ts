@@ -69,6 +69,7 @@ export interface Order {
   notes?: string;
   customRequests?: string;
   notionSyncStatus?: 'synced' | 'pending' | 'failed';
+  packingNotes?: Record<string, string>;
 }
 
 export interface User {

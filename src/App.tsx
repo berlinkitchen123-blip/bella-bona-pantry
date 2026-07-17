@@ -17,6 +17,7 @@ import AdminInventoryPage from './pages/AdminInventoryPage';
 import AdminInvoicesPage from './pages/AdminInvoicesPage';
 import AdminCustomersPage from './pages/AdminCustomersPage';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import PackingStationPage from './pages/PackingStationPage';
 
 // Protectors
 function ProtectedRoute({ children, reqAdmin = false }: { children: ReactNode, reqAdmin?: boolean }) {
@@ -70,6 +71,7 @@ function AppRoutes() {
           <Route path="admin/invoices" element={<ProtectedRoute reqAdmin><AdminInvoicesPage /></ProtectedRoute>} />
           <Route path="admin/customers" element={<ProtectedRoute reqAdmin><AdminCustomersPage /></ProtectedRoute>} />
           <Route path="admin/analytics" element={<ProtectedRoute reqAdmin><AdminAnalyticsPage /></ProtectedRoute>} />
+          <Route path="packing" element={<ProtectedRoute reqAdmin><PackingStationPage /></ProtectedRoute>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
