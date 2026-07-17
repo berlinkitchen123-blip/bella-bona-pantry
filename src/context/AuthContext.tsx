@@ -8,7 +8,7 @@ import {
   getRedirectResult,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
-import { ref, onValue, set } from 'firebase/database';
+import { ref, onValue, set, get } from 'firebase/database';
 import { auth, googleProvider, db } from '../firebase';
 import type { User } from '../types';
 import { readCache, writeCache, clearCache } from '../lib/localCache';
@@ -65,21 +65,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const profileRef = ref(db, `users/${fbUser.uid}`);
-      unsubscribeProfile = onValue(profileRef, (snapshot) => {
+      unsubscribeProfile = onValue(profileRef, async (snapshot) => {
         const profile = snapshot.val();
         const role = roleForEmail(fbUser.email || '');
         let resolved: User;
 
         if (!profile) {
+          // Check for admin-preconfigured profile
+          const pendingSnap = await get(ref(db, `pendingUsers/${fbUser.uid}`));
+          const pending = pendingSnap.val();
+
           resolved = {
             uid: fbUser.uid,
             email: fbUser.email || '',
-            name: fbUser.displayName || (fbUser.email || '').split('@')[0],
-            company: '',
-            companyAddress: '',
-            role,
+            name: pending?.name || fbUser.displayName || (fbUser.email || '').split('@')[0],
+            company: pending?.company || '',
+            companyAddress: pending?.companyAddress || '',
+            role: roleForEmail(fbUser.email || ''),
           };
-          set(profileRef, resolved);
+          // Write to users/ (user writes their OWN profile - allowed)
+          await set(profileRef, resolved);
+          // Clean up pendingUsers
+          if (pending) {
+            await set(ref(db, `pendingUsers/${fbUser.uid}`), null);
+          }
         } else {
           resolved = { ...profile, uid: fbUser.uid, email: fbUser.email || profile.email, role } as User;
         }
