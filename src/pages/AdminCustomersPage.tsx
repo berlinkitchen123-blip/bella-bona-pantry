@@ -136,7 +136,7 @@ export default function AdminCustomersPage() {
       }
     });
 
-    // Firebase users take priority for same email â merge order counts in
+    // Firebase users take priority for same email Ã¢ÂÂ merge order counts in
     const fbEmails = new Set(firebaseCustomers.map(c => c.email));
     const fbMerged: CustomerWithOrders[] = firebaseCustomers.map(c => {
       const od = orderMap[c.email];
@@ -294,7 +294,7 @@ export default function AdminCustomersPage() {
       // Also store in customerDetails for the Customers page display
       const emailKey = newCust.email.replace(/[@.]/g, '_');
       await set(ref(db, `customerDetails/${emailKey}`), record);
-      alert(`â Account created! Password setup email sent to ${newCust.email}`);
+      setSuccessMsg(`✅ Account created! Password setup email sent to ${newCust.email}`); setTimeout(() => setSuccessMsg(''), 5000);
       setShowAddModal(false);
       setNewCust({ companyName: '', contactPerson: '', email: '', address: '', tier: 'basic' });
     } catch (err: any) {
@@ -305,7 +305,7 @@ export default function AdminCustomersPage() {
   };
 
   const formatDate = (iso?: string) => {
-    if (!iso) return 'â';
+    if (!iso) return 'Ã¢ÂÂ';
     return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
@@ -527,7 +527,7 @@ export default function AdminCustomersPage() {
                     className="input-field"
                     value={editForm.contactPerson}
                     onChange={e => setEditForm({ ...editForm, contactPerson: e.target.value })}
-                    placeholder="Max MÃ¼ller"
+                    placeholder="Max MÃÂ¼ller"
                   />
                 </div>
               </div>
@@ -653,8 +653,10 @@ export default function AdminCustomersPage() {
             </div>
             <form onSubmit={handleAdd} className="p-10 space-y-5">
               <div className="rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm text-blue-700 font-semibold">
-                ð§ Customer will receive an email to set their password and can then log in.
+                Ã°ÂÂÂ§ Customer will receive an email to set their password and can then log in.
               </div>
+              {successMsg && <div className="mt-3 p-3 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm font-semibold">{successMsg}</div>}
+              {errorMsg && <div className="mt-3 p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm font-semibold">{errorMsg}</div>}
               <div className="grid grid-cols-2 gap-5">
                 <div>
                   <label className="block text-[11px] font-black text-surface-400 uppercase tracking-widest mb-2">Company Name</label>
@@ -673,7 +675,7 @@ export default function AdminCustomersPage() {
                     className="input-field"
                     value={newCust.contactPerson}
                     onChange={e => setNewCust({...newCust, contactPerson: e.target.value})}
-                    placeholder="Max MÃ¼ller"
+                    placeholder="Max MÃÂ¼ller"
                   />
                 </div>
               </div>
