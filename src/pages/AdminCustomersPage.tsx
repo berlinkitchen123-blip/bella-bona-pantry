@@ -21,6 +21,8 @@ export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<CustomerWithOrders[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const [newCust, setNewCust] = useState({
     companyName: '', contactPerson: '', email: '', address: '',
     tier: 'basic' as Customer['pantryTier']
@@ -296,7 +298,7 @@ export default function AdminCustomersPage() {
       setShowAddModal(false);
       setNewCust({ companyName: '', contactPerson: '', email: '', address: '', tier: 'basic' });
     } catch (err: any) {
-      alert(`Error: ${err.message}`);
+      setErrorMsg(`Error: ${(err as Error).message}`); setTimeout(() => setErrorMsg(''), 5000);
     } finally {
       setSaving(false);
     }
