@@ -1,6 +1,6 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, deleteApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -22,3 +22,17 @@ export const db = getDatabase(app);
 // Initialize Auth (email/password + Google sign-in)
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+export async function createAuthAccount(email: string, tempPassword: string): Promise<string> {
+  // Use a secondary app instance so admin stays logged in
+  const secondaryApp = initializeApp(firebaseConfig, `secondary_${Date.now()}`);
+  const secondaryAuth = getAuth(secondaryApp);
+  try {
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, tempPassword);
+    const uid = cred.user.uid;
+    await secondaryAuth.signOut();
+    return uid;
+  } finally {
+    await deleteApp(secondaryApp);
+  }
+}
