@@ -134,7 +134,7 @@ export default function AdminCustomersPage() {
       }
     });
 
-    // Firebase users take priority for same email — merge order counts in
+    // Firebase users take priority for same email â merge order counts in
     const fbEmails = new Set(firebaseCustomers.map(c => c.email));
     const fbMerged: CustomerWithOrders[] = firebaseCustomers.map(c => {
       const od = orderMap[c.email];
@@ -286,8 +286,13 @@ export default function AdminCustomersPage() {
         onboardedAt: new Date().toISOString().split('T')[0],
         allowSpecificTime: newCust.tier !== 'basic',
       };
-      await set(ref(db, `users/${uid}`), record);
-      alert(`✓ Account created! Password setup email sent to ${newCust.email}`);
+      // Write pre-configured profile to pendingUsers (admin can write here)
+      // AuthContext will pick this up when the user first logs in
+      await set(ref(db, `pendingUsers/${uid}`), record);
+      // Also store in customerDetails for the Customers page display
+      const emailKey = newCust.email.replace(/[@.]/g, '_');
+      await set(ref(db, `customerDetails/${emailKey}`), record);
+      alert(`â Account created! Password setup email sent to ${newCust.email}`);
       setShowAddModal(false);
       setNewCust({ companyName: '', contactPerson: '', email: '', address: '', tier: 'basic' });
     } catch (err: any) {
@@ -298,7 +303,7 @@ export default function AdminCustomersPage() {
   };
 
   const formatDate = (iso?: string) => {
-    if (!iso) return '—';
+    if (!iso) return 'â';
     return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
@@ -520,7 +525,7 @@ export default function AdminCustomersPage() {
                     className="input-field"
                     value={editForm.contactPerson}
                     onChange={e => setEditForm({ ...editForm, contactPerson: e.target.value })}
-                    placeholder="Max Müller"
+                    placeholder="Max MÃ¼ller"
                   />
                 </div>
               </div>
@@ -646,7 +651,7 @@ export default function AdminCustomersPage() {
             </div>
             <form onSubmit={handleAdd} className="p-10 space-y-5">
               <div className="rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm text-blue-700 font-semibold">
-                📧 Customer will receive an email to set their password and can then log in.
+                ð§ Customer will receive an email to set their password and can then log in.
               </div>
               <div className="grid grid-cols-2 gap-5">
                 <div>
@@ -666,7 +671,7 @@ export default function AdminCustomersPage() {
                     className="input-field"
                     value={newCust.contactPerson}
                     onChange={e => setNewCust({...newCust, contactPerson: e.target.value})}
-                    placeholder="Max Müller"
+                    placeholder="Max MÃ¼ller"
                   />
                 </div>
               </div>
